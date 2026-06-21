@@ -63,7 +63,7 @@ const recipeNameTranslations: Record<string, string> = {
   "Cooked Cactus Flesh": "熟仙人掌肉",
   "Cooked Eel": "熟鰻魚",
   "Cooked Egg": "熟鳥蛋",
-  "Cooked Fish": "熟魚",
+  "Cooked Fish": "魚排",
   "Cooked Frog Legs": "熟蛙腿",
   "Cooked Green Cap": "熟綠蘑菇",
   "Cooked Leafy Meat": "熟葉肉",
@@ -71,7 +71,7 @@ const recipeNameTranslations: Record<string, string> = {
   "Cooked Monster Meat": "熟怪物肉",
   "Cooked Moon Shroom": "熟月亮蘑菇",
   "Cooked Red Cap": "熟紅蘑菇",
-  "Cooked Small Fish": "熟小魚肉",
+  "Cooked Small Fish": "熟小魚塊",
   "Cooked Small Meat": "熟小肉",
   "Creamy Potato Purée": "奶油土豆泥",
   "Dark Petal Tea": "深色花瓣茶",
@@ -85,7 +85,7 @@ const recipeNameTranslations: Record<string, string> = {
   "Figkabab": "無花果烤串",
   "Fire Nettle Tea": "火蕁麻茶",
   "Fish Cordon Bleu": "藍帶魚排",
-  "Fish Morsel": "小魚塊",
+  "Fish Morsel": "魚肉乾",
   "Fish Tacos": "魚肉玉米卷",
   "Fishsticks": "炸魚排",
   "Fist Full of Jam": "果醬",
@@ -163,7 +163,8 @@ const recipeNameTranslations: Record<string, string> = {
   "Veggie Burger": "素食堡",
   "Volt Goat Chaud-Froid": "伏特羊肉凍",
   "Waffles": "華夫餅",
-  "Wet Goop": "潮濕黏糊"
+  "Wet Goop": "潮濕黏糊",
+  "Puffed Potato Soufflé": "蓬鬆土豆蛋奶酥"
 };
 
 function mapCategoryToTag(name: string): string {
