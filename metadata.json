@@ -1,0 +1,6 @@
+{
+  "name": "飢荒食譜模擬器",
+  "description": "Don't Starve Crock Pot Recipe Simulator and database finder. Users can select ingredients to see matching dishes, filter recipes, and sort by health, sanity, or hunger recovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
