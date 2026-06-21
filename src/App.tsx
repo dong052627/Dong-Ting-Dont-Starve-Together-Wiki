@@ -387,8 +387,12 @@ export default function App() {
       <header className="border-b border-stone-800 bg-stone-900 py-6" id="header-panel">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-amber-600/10 p-3 border border-amber-500/30 animate-dst-glow">
-              <Soup className="h-8 w-8 text-amber-500" />
+            <div className="rounded-xl p-1 border border-amber-500/30 bg-stone-950/60 animate-dst-glow overflow-hidden h-14 w-14 flex items-center justify-center">
+              <img
+                src={`${(import.meta as any).env.BASE_URL || "/"}Don't_Starve_Together_icon.png`}
+                className="h-12 w-12 object-contain"
+                alt="DST Logo"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
