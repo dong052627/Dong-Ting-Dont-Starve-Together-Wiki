@@ -171,7 +171,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "cutlichen",
-    "name": "摘下的地衣",
+    "name": "苔蘚",
     "englishName": "Cut Lichen",
     "category": "veg",
     "values": {
@@ -227,7 +227,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "potato",
-    "name": "馬鈴薯",
+    "name": "土豆",
     "englishName": "Potato",
     "category": "veg",
     "values": {
@@ -249,7 +249,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "red_cap",
-    "name": "紅蘑菇",
+    "name": "採摘的紅蘑菇",
     "englishName": "Red Cap",
     "category": "veg",
     "values": {
@@ -260,7 +260,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "green_cap",
-    "name": "綠蘑菇",
+    "name": "採摘的綠蘑菇",
     "englishName": "Green Cap",
     "category": "veg",
     "values": {
@@ -271,7 +271,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "blue_cap",
-    "name": "藍蘑菇",
+    "name": "採摘的藍蘑菇",
     "englishName": "Blue Cap",
     "category": "veg",
     "values": {
@@ -293,7 +293,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "kelp",
-    "name": "海帶",
+    "name": "海帶葉",
     "englishName": "Kelp Fronds",
     "category": "veg",
     "values": {
@@ -350,7 +350,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "meat",
-    "name": "大肉",
+    "name": "肉",
     "englishName": "Meat",
     "category": "meat",
     "values": {
@@ -396,7 +396,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "batwing",
-    "name": "蝙蝠翅膀",
+    "name": "洞穴蝙蝠翅膀",
     "englishName": "Batilisk Wing",
     "category": "meat",
     "values": {
@@ -509,7 +509,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "fish",
-    "name": "魚肉",
+    "name": "魚",
     "englishName": "Fish",
     "category": "meat",
     "values": {
@@ -521,7 +521,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "pondeel",
-    "name": "池塘鰻魚",
+    "name": "活鰻魚",
     "englishName": "Pond Eel",
     "category": "meat",
     "values": {
@@ -534,7 +534,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "pondfish",
-    "name": "池塘魚",
+    "name": "淡水魚",
     "englishName": "Pond Fish",
     "category": "meat",
     "values": {
@@ -558,7 +558,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "fishmeat",
-    "name": "魚肉片",
+    "name": "生魚肉",
     "englishName": "Fish Morsel",
     "category": "meat",
     "values": {
@@ -606,7 +606,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "oceanfish_small_5_inv",
-    "name": "鱈魚（小）",
+    "name": "爆米花魚",
     "englishName": "Corn Cod",
     "category": "meat",
     "values": {
@@ -618,7 +618,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "oceanfish_medium_5_inv",
-    "name": "鱈魚（中）",
+    "name": "玉米鱈魚",
     "englishName": "Corn Cod",
     "category": "meat",
     "values": {
@@ -663,7 +663,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "honeycomb",
-    "name": "蜂窩",
+    "name": "蜜脾",
     "englishName": "Honeycomb",
     "category": "sweetener",
     "values": {
@@ -740,7 +740,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "ice",
-    "name": "冰塊",
+    "name": "冰",
     "englishName": "Ice",
     "category": "filler",
     "values": {
@@ -773,7 +773,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "goatmilk",
-    "name": "羊奶",
+    "name": "帶電的羊奶",
     "englishName": "Electric Milk",
     "category": "dairy",
     "values": {
@@ -784,7 +784,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "milkywhites",
-    "name": "乳白漿液",
+    "name": "乳白物",
     "englishName": "Milky Whites",
     "category": "dairy",
     "values": {
@@ -817,7 +817,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "refined_dust",
-    "name": "塵埃",
+    "name": "塵土塊",
     "englishName": "Collected Dust",
     "category": "special",
     "values": {
@@ -850,7 +850,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "petals_evil_dried",
-    "name": "乾惡魔花瓣",
+    "name": "乾深色花瓣",
     "englishName": "Dried Dark Petals",
     "category": "special",
     "values": {
@@ -861,7 +861,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "foliage_dried",
-    "name": "乾樹葉",
+    "name": "幹蕨葉",
     "englishName": "Dried Foliage",
     "category": "special",
     "values": {
@@ -872,7 +872,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "succulent_picked_dried",
-    "name": "乾多肉植物",
+    "name": "乾多肉",
     "englishName": "Dried Succulent",
     "category": "special",
     "values": {
@@ -883,7 +883,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "firenettles_dried",
-    "name": "乾火蕁麻",
+    "name": "乾火蕁麻葉",
     "englishName": "Dried Fire Nettles",
     "category": "special",
     "values": {
@@ -894,7 +894,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "tillweed_dried",
-    "name": "乾耕地作物",
+    "name": "乾犁地草",
     "englishName": "Dried Tillweed",
     "category": "special",
     "values": {
@@ -905,7 +905,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "moon_tree_blossom_dried",
-    "name": "乾月亮樹花",
+    "name": "乾月樹花",
     "englishName": "Dried Moon Tree Blossom",
     "category": "special",
     "values": {
@@ -936,7 +936,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "pomegranate_cooked",
-    "name": "熟石榴",
+    "name": "切片熟石榴",
     "englishName": "Cooked Pomegranate",
     "category": "fruit",
     "values": {
@@ -947,7 +947,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "dragonfruit_cooked",
-    "name": "熟火龍果",
+    "name": "烤火龍果",
     "englishName": "Cooked Dragon Fruit",
     "category": "fruit",
     "values": {
@@ -959,7 +959,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "cave_banana_cooked",
-    "name": "熟洞穴香蕉",
+    "name": "熟香蕉",
     "englishName": "Cooked Cave Banana",
     "category": "fruit",
     "values": {
@@ -970,7 +970,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "berries_cooked",
-    "name": "熟漿果",
+    "name": "烤漿果",
     "englishName": "Cooked Berries",
     "category": "fruit",
     "values": {
@@ -981,7 +981,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "berries_juicy_cooked",
-    "name": "熟多汁漿果",
+    "name": "烤多汁漿果",
     "englishName": "Cooked Juicy Berries",
     "category": "fruit",
     "values": {
@@ -1003,7 +1003,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "durian_cooked",
-    "name": "熟榴槤",
+    "name": "超臭榴槤",
     "englishName": "Cooked Durian",
     "category": "fruit",
     "values": {
@@ -1015,7 +1015,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "watermelon_cooked",
-    "name": "熟西瓜",
+    "name": "烤西瓜",
     "englishName": "Cooked Watermelon",
     "category": "fruit",
     "values": {
@@ -1027,7 +1027,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "ancientfruit_nightvision_cooked",
-    "name": "熟夜影漿果",
+    "name": "熟夜莓",
     "englishName": "Cooked Nightberry",
     "category": "fruit",
     "values": {
@@ -1138,7 +1138,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "potato_cooked",
-    "name": "烤馬鈴薯",
+    "name": "烤土豆",
     "englishName": "Cooked Potato",
     "category": "veg",
     "values": {
@@ -1204,7 +1204,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "kelp_cooked",
-    "name": "烤海帶",
+    "name": "熟海帶葉",
     "englishName": "Cooked Kelp Fronds",
     "category": "veg",
     "values": {
@@ -1215,7 +1215,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "kelp_dried",
-    "name": "乾海帶",
+    "name": "乾海帶葉",
     "englishName": "Dried Kelp Fronds",
     "category": "veg",
     "values": {
@@ -1238,7 +1238,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "cactus_meat_cooked",
-    "name": "烤仙人掌肉",
+    "name": "熟仙人掌肉",
     "englishName": "Cooked Cactus Flesh",
     "category": "veg",
     "values": {
@@ -1271,7 +1271,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "meat_dried",
-    "name": "肉乾",
+    "name": "風乾肉",
     "englishName": "Dried Meat",
     "category": "meat",
     "values": {
@@ -1317,7 +1317,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "drumstick_cooked",
-    "name": "熟火雞腿",
+    "name": "炸鳥腿",
     "englishName": "Cooked Drumstick",
     "category": "meat",
     "values": {
@@ -1329,7 +1329,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "batwing_cooked",
-    "name": "烤蝙蝠翅膀",
+    "name": "熟蝙蝠翅膀",
     "englishName": "Cooked Batilisk Wing",
     "category": "meat",
     "values": {
@@ -1386,7 +1386,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "fish_cooked",
-    "name": "熟魚肉",
+    "name": "熟魚",
     "englishName": "Cooked Fish",
     "category": "meat",
     "values": {
@@ -1411,7 +1411,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "fishmeat_small_cooked",
-    "name": "熟小魚肉",
+    "name": "熟小魚塊",
     "englishName": "Cooked Small Fish Morsel",
     "category": "meat",
     "values": {
@@ -1459,7 +1459,7 @@ export const INGREDIENTS: Ingredient[] = [
   },
   {
     "id": "bird_egg_cooked",
-    "name": "煎蛋",
+    "name": "熟鳥蛋",
     "englishName": "Cooked Egg",
     "category": "egg",
     "values": {
