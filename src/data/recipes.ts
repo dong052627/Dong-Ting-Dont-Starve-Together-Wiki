@@ -1416,6 +1416,8 @@ export const cookingRecipes: CookingRecipe[] = [
   { id: "berries_cooked", name: "Roasted Berries", requirements: "Berries ×1", foodType: "veggie", health: 1, hunger: 12.5, sanity: 0, perishDays: 3, cookTime: 1, priority: 0, station: "campfire" },
   { id: "seeds_cooked", name: "Toasted Seeds", requirements: "Seeds ×1", foodType: "generic", health: 1, hunger: 4.6875, sanity: 0, perishDays: 10, cookTime: 1, priority: 0, station: "campfire" },
   { id: "kelp_cooked", name: "Dried Kelp Fronds", requirements: "Kelp Fronds ×1", foodType: "veggie", health: 0, hunger: 9.375, sanity: -5, perishDays: 10, cookTime: 1, priority: 0, station: "campfire" },
+  { id: "tallbirdegg_cooked", name: "Cooked Tallbird Egg", requirements: "Tallbird Egg ×1", foodType: "generic", health: 0, hunger: 37.5, sanity: 0, perishDays: 6, cookTime: 1, priority: 0, station: "campfire" },
+
 
   // ============================================================
   // Drying Rack (건조대)

@@ -55,3 +55,11 @@ Desktop.ini
 *.tsbuildinfo
 .npm/
 .yarn/
+
+# Local modding tools
+DSTmodutils/
+
+# Scratch and temp files
+scratch/
+scratch_*
+skilltree*.png

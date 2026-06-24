@@ -33,6 +33,7 @@ const recipeNameTranslations: Record<string, string> = {
   "Cooked Cactus Flesh": "熟仙人掌肉",
   "Cooked Eel": "熟鰻魚",
   "Cooked Egg": "熟鳥蛋",
+  "Cooked Tallbird Egg": "煎高腳鳥蛋",
   "Cooked Fish": "魚排",
   "Cooked Frog Legs": "熟蛙腿",
   "Cooked Green Cap": "熟綠蘑菇",

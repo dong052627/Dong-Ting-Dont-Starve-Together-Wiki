@@ -23,7 +23,7 @@ import {
   ChevronRight,
   UserCheck,
   Cpu,
-  Zap
+  Zap,
 } from "lucide-react";
 import {
   INGREDIENTS,
@@ -54,7 +54,8 @@ const SPECIAL_INGREDIENTS = [
   { id: "refined_dust", names: ["塵埃", "collected dust"] },
   { id: "nightmarefuel", names: ["噩夢燃料", "nightmare fuel"] },
   { id: "boneshard", names: ["骨頭碎片", "bone shards"] },
-  { id: "batnose", names: ["裸露鼻孔", "batnose"] }
+  { id: "batnose", names: ["裸露鼻孔", "batnose"] },
+  { id: "tallbirdegg", names: ["高腳鳥蛋", "tallbird egg"] },
 ];
 
 function isStronglyBoundTo(recipe: Recipe, ingredientId: string): boolean {
@@ -75,14 +76,14 @@ function isStronglyBoundTo(recipe: Recipe, ingredientId: string): boolean {
     refined_dust: ["collected dust"],
     nightmarefuel: ["nightmare fuel"],
     boneshard: ["bone shards", "bone shard"],
-    batnose: ["batnose"]
+    batnose: ["batnose"],
+    tallbirdegg: ["tallbird egg"],
   };
 
   const terms = idToTerms[ingredientId];
   if (!terms) return false;
-  return terms.some(term => reqLower.includes(term));
+  return terms.some((term) => reqLower.includes(term));
 }
-
 
 export function getRecipeEmoji(id: string): string {
   const emojiMap: Record<string, string> = {
@@ -103,12 +104,18 @@ export function getRecipeEmoji(id: string): string {
     watermelonicle: "🍉",
     taffy: "🍬",
     bonestew: "🥣",
-    meatballs: "🧆"
+    meatballs: "🧆",
   };
   return emojiMap[id] || "🍛";
 }
 
-function RecipeImage({ recipeId, className = "w-8 h-8 object-contain" }: { recipeId: string; className?: string }) {
+function RecipeImage({
+  recipeId,
+  className = "w-8 h-8 object-contain",
+}: {
+  recipeId: string;
+  className?: string;
+}) {
   const [error, setError] = useState(false);
   const basePath = (import.meta as any).env.BASE_URL || "/";
   const src = `${basePath}images/recipes/${recipeId}.png`;
@@ -127,7 +134,15 @@ function RecipeImage({ recipeId, className = "w-8 h-8 object-contain" }: { recip
   );
 }
 
-function IngredientImage({ ingredientId, avatarText, className = "w-6 h-6 object-contain" }: { ingredientId: string; avatarText: string; className?: string }) {
+function IngredientImage({
+  ingredientId,
+  avatarText,
+  className = "w-6 h-6 object-contain",
+}: {
+  ingredientId: string;
+  avatarText: string;
+  className?: string;
+}) {
   const [error, setError] = useState(false);
   const basePath = (import.meta as any).env.BASE_URL || "/";
   const src = `${basePath}images/ingredients/${ingredientId}.png`;
@@ -146,73 +161,154 @@ function IngredientImage({ ingredientId, avatarText, className = "w-6 h-6 object
   );
 }
 
-function StateIcon({ type, className = "w-5 h-5 object-contain" }: { type: "hp" | "hunger" | "sanity"; className?: string }) {
+function StateIcon({
+  type,
+  className = "w-5 h-5 object-contain",
+}: {
+  type: "hp" | "hunger" | "sanity";
+  className?: string;
+}) {
   const basePath = (import.meta as any).env.BASE_URL || "/";
-  const filename = type === "hp" ? "HealthMeter.webp" : type === "hunger" ? "Hunger.webp" : "Sanity.webp";
+  const filename =
+    type === "hp"
+      ? "HealthMeter.webp"
+      : type === "hunger"
+        ? "Hunger.webp"
+        : "Sanity.webp";
   const src = `${basePath}images/state/${filename}`;
+  return <img src={src} className={className} alt={type} />;
+}
+
+function CircuitImage({
+  circuitId,
+  className = "w-8 h-8 object-contain",
+}: {
+  circuitId: string;
+  className?: string;
+}) {
+  const [error, setError] = useState(false);
+  const basePath = (import.meta as any).env.BASE_URL || "/";
+  const src = `${basePath}images/circuits/${circuitId}.png`;
+
+  if (error) {
+    return <span className="text-stone-400 font-mono text-[10px]">⚙️</span>;
+  }
+
   return (
     <img
       src={src}
+      onError={() => setError(true)}
       className={className}
-      alt={type}
+      alt=""
     />
   );
 }
 
+
 export default function App() {
   // Global states
-  const [activeTab, setActiveTab] = useState<"recipes" | "simulator" | "characters">("recipes");
+  const [activeTab, setActiveTab] = useState<
+    "recipes" | "simulator" | "characters"
+  >("recipes");
 
   // Character Encyclopedia States
   const [activeCharacterId, setActiveCharacterId] = useState<string>("wx78");
   const [wxCircuits, setWxCircuits] = useState<string[]>([]);
+  const [expandedCircuitIds, setExpandedCircuitIds] = useState<
+    Record<string, boolean>
+  >({});
+
+  const toggleCircuitExpand = (id: string) => {
+    setExpandedCircuitIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   const currentCharacter = useMemo(() => {
-    return CHARACTERS.find(c => c.id === activeCharacterId) || CHARACTERS[0];
+    return CHARACTERS.find((c) => c.id === activeCharacterId) || CHARACTERS[0];
   }, [activeCharacterId]);
 
   const totalSlotsUsed = useMemo(() => {
-    if (currentCharacter.id !== "wx78") return 0;
-    return wxCircuits.reduce((acc, cId) => {
-      const circ = currentCharacter.circuits?.find(c => c.id === cId);
-      return acc + (circ?.slots || 0);
-    }, 0);
+    const result = { alpha: 0, beta: 0, gamma: 0 };
+    if (currentCharacter.id !== "wx78") return result;
+
+    wxCircuits.forEach((cId) => {
+      const circ = currentCharacter.circuits?.find((c) => c.id === cId);
+      if (circ) {
+        const type = circ.type as "alpha" | "beta" | "gamma";
+        result[type] += circ.slots;
+      }
+    });
+    return result;
   }, [wxCircuits, currentCharacter]);
 
   const slotsAllocation = useMemo(() => {
-    const representation: { circuitId: string; name: string; color: string; indexInCircuit: number; slots: number; originalIndex: number }[] = [];
-    
-    wxCircuits.forEach((cId, originalIndex) => {
-      const circ = CHARACTERS[0].circuits?.find(c => c.id === cId);
-      if (!circ) return;
-      
-      let color = "bg-amber-500/20 border-amber-500/50 text-amber-300";
-      if (cId === "hardy") color = "bg-rose-950/60 border-rose-500/60 text-rose-300";
-      if (cId === "logic") color = "bg-indigo-950/60 border-indigo-500/60 text-indigo-300";
-      if (cId === "gastric") color = "bg-emerald-950/60 border-emerald-500/60 text-emerald-300";
-      if (cId === "acceleration") color = "bg-amber-950/60 border-amber-500/60 text-amber-350";
-      if (cId === "illumination") color = "bg-yellow-950/60 border-yellow-500/60 text-yellow-300";
-      if (cId === "thermal") color = "bg-orange-950/60 border-orange-500/60 text-orange-300";
-      if (cId === "refrigerant") color = "bg-sky-950/60 border-sky-500/60 text-sky-300";
+    const getCategoryAllocation = (type: "alpha" | "beta" | "gamma") => {
+      const representation: {
+        circuitId: string;
+        name: string;
+        color: string;
+        indexInCircuit: number;
+        slots: number;
+        originalIndex: number;
+      }[] = [];
 
-      for (let i = 0; i < circ.slots; i++) {
-        representation.push({
-          circuitId: circ.id,
-          name: circ.name,
-          color,
-          indexInCircuit: i,
-          slots: circ.slots,
-          originalIndex
-        });
+      wxCircuits.forEach((cId, originalIndex) => {
+        const circ = currentCharacter.circuits?.find((c) => c.id === cId);
+        if (!circ || circ.type !== type) return;
+
+        let color = "";
+        if (type === "alpha")
+          color = "bg-rose-950/60 border-rose-500/60 text-rose-300";
+        if (type === "beta")
+          color = "bg-amber-950/60 border-amber-500/60 text-amber-300";
+        if (type === "gamma")
+          color = "bg-emerald-950/60 border-emerald-500/60 text-emerald-300";
+
+        for (let i = 0; i < circ.slots; i++) {
+          representation.push({
+            circuitId: circ.id,
+            name: circ.name,
+            color,
+            indexInCircuit: i,
+            slots: circ.slots,
+            originalIndex,
+          });
+        }
+      });
+
+      const result: (
+        | {
+            empty: boolean;
+            name?: string;
+            color?: string;
+            indexInCircuit?: number;
+            slots?: number;
+            originalIndex?: number;
+          }
+        | {
+            empty: false;
+            circuitId: string;
+            name: string;
+            color: string;
+            indexInCircuit: number;
+            slots: number;
+            originalIndex: number;
+          }
+      )[] = representation.map((r) => ({ empty: false, ...r }));
+      while (result.length < 6) {
+        result.push({ empty: true });
       }
-    });
+      return result;
+    };
 
-    const result: ({ empty: boolean } | { empty: false; circuitId: string; name: string; color: string; indexInCircuit: number; slots: number; originalIndex: number })[] = representation.map(r => ({ empty: false, ...r }));
-    while (result.length < 6) {
-      result.push({ empty: true });
-    }
-    return result;
-  }, [wxCircuits]);
+    return {
+      alpha: getCategoryAllocation("alpha"),
+      beta: getCategoryAllocation("beta"),
+      gamma: getCategoryAllocation("gamma"),
+    };
+  }, [wxCircuits, currentCharacter]);
 
   const calculatedStats = useMemo(() => {
     let health = currentCharacter.health;
@@ -223,34 +319,139 @@ export default function App() {
     let thermal = false;
     let refrigerant = false;
 
+    // Custom special perks calculations
+    let sanityRegen = 0;
+    let healthRegen = 0;
+    let hungerRateText = "";
+    let physicalReduction = "";
+    let pocketCount = 0;
+    let chessBonus = 0;
+    let hasElectric = false;
+    let hasDigest = false;
+    let hasBlock = false;
+    let hasSonic = false;
+    let hasSpin = false;
+
     if (currentCharacter.id === "wx78") {
-      wxCircuits.forEach(cId => {
-        const circ = currentCharacter.circuits?.find(c => c.id === cId);
+      let speedCount = 0;
+      let hardyCount = 0;
+
+      wxCircuits.forEach((cId) => {
+        const circ = currentCharacter.circuits?.find((c) => c.id === cId);
         if (!circ) return;
+
+        // 1. Basic Stats
         if (circ.statBonus) {
           if (circ.statBonus.health) health += circ.statBonus.health;
           if (circ.statBonus.hunger) hunger += circ.statBonus.hunger;
           if (circ.statBonus.sanity) sanity += circ.statBonus.sanity;
         }
-        if (cId === "acceleration") speedBonus += 25;
-        if (cId === "illumination") light = true;
-        if (cId === "thermal") thermal = true;
-        if (cId === "refrigerant") refrigerant = true;
+
+        // 2. Extra effects
+        if (cId === "alpha_health_1" || cId === "alpha_health_2") {
+          hardyCount++;
+        }
+        if (cId === "alpha_hunger_1") {
+          if (!hungerRateText) hungerRateText = "降低少量飢餓消耗";
+        }
+        if (cId === "alpha_hunger_2") {
+          hungerRateText = "降低中量飢餓消耗";
+        }
+        if (cId === "alpha_sanity_2") {
+          sanityRegen += 2;
+        }
+        if (cId === "alpha_combo_1") {
+          sanityRegen += 2;
+          healthRegen += 10;
+        }
+        if (cId === "beta_speed_1") {
+          speedBonus += 25;
+        }
+        if (cId === "beta_speed_2") {
+          speedCount++;
+          if (speedCount === 1) speedBonus += 25;
+          else if (speedCount === 2) speedBonus += 15;
+          else if (speedCount === 3) speedBonus += 10;
+        }
+        if (cId === "beta_light_1" || cId === "beta_light_2") {
+          light = true;
+        }
+        if (cId === "beta_thermal") {
+          thermal = true;
+        }
+        if (cId === "beta_refrigerant") {
+          refrigerant = true;
+        }
+        if (cId === "beta_electric") {
+          hasElectric = true;
+        }
+        if (cId === "beta_pocket") {
+          pocketCount += 1;
+        }
+        if (cId === "gamma_digest") {
+          hasDigest = true;
+        }
+        if (cId === "gamma_chess") {
+          chessBonus += 1;
+        }
+        if (cId === "gamma_block") {
+          hasBlock = true;
+        }
+        if (cId === "gamma_sonic") {
+          hasSonic = true;
+        }
+        if (cId === "gamma_spin") {
+          hasSpin = true;
+        }
       });
+
+      if (hardyCount > 0) {
+        physicalReduction =
+          hardyCount >= 2 ? "較多物理傷害減免" : "少量物理傷害減免";
+      }
     }
 
-    return { health, hunger, sanity, speedBonus, light, thermal, refrigerant };
+    return {
+      health,
+      hunger,
+      sanity,
+      speedBonus,
+      light,
+      thermal,
+      refrigerant,
+      sanityRegen,
+      healthRegen,
+      hungerRateText,
+      physicalReduction,
+      hasElectric,
+      pocketCount,
+      hasDigest,
+      chessBonus,
+      hasBlock,
+      hasSonic,
+      hasSpin,
+    };
   }, [wxCircuits, currentCharacter]);
 
   const handleInstallCircuit = (circuit: Circuit) => {
-    const currentCount = wxCircuits.filter(id => id === circuit.id).length;
+    const currentCount = wxCircuits.filter((id) => id === circuit.id).length;
     if (currentCount >= circuit.maxCount) return;
-    if (totalSlotsUsed + circuit.slots > 6) return;
+
+    // Check total slots used for this specific type
+    const slotsOfThisType = wxCircuits.reduce((acc, cId) => {
+      const circ = currentCharacter.circuits?.find((c) => c.id === cId);
+      if (circ && circ.type === circuit.type) {
+        return acc + circ.slots;
+      }
+      return acc;
+    }, 0);
+
+    if (slotsOfThisType + circuit.slots > 6) return;
     setWxCircuits([...wxCircuits, circuit.id]);
   };
 
   const handleUninstallCircuit = (index: number) => {
-    setWxCircuits(prev => prev.filter((_, idx) => idx !== index));
+    setWxCircuits((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const handleFavoriteFoodClick = () => {
@@ -260,25 +461,29 @@ export default function App() {
   };
 
   // Expanded status for category drawers (Tab 1: recipes checklist, Tab 2: simulator panel)
-  const [expandedCatRecipes, setExpandedCatRecipes] = useState<Record<string, boolean>>({});
-  const [expandedCatSim, setExpandedCatSim] = useState<Record<string, boolean>>({});
+  const [expandedCatRecipes, setExpandedCatRecipes] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedCatSim, setExpandedCatSim] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const toggleCatRecipes = (catKey: string) => {
-    setExpandedCatRecipes(prev => {
+    setExpandedCatRecipes((prev) => {
       const isCurrentlyExpanded = !!prev[catKey];
       return {
-        [catKey]: !isCurrentlyExpanded
+        [catKey]: !isCurrentlyExpanded,
       };
     });
   };
 
   const toggleCatSim = (catKey: string) => {
-    setExpandedCatSim(prev => ({
+    setExpandedCatSim((prev) => ({
       ...prev,
-      [catKey]: !prev[catKey]
+      [catKey]: !prev[catKey],
     }));
   };
-  
+
   // States for Ingredient Checker mode
   const [checkedIngredients, setCheckedIngredients] = useState<string[]>([]);
 
@@ -291,7 +496,9 @@ export default function App() {
 
   // States for the main Recipe Catalog filtering
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"hp" | "hunger" | "sanity" | "priority">("hp");
+  const [sortBy, setSortBy] = useState<"hp" | "hunger" | "sanity" | "priority">(
+    "hp",
+  );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [onlyShowCookable, setOnlyShowCookable] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -305,29 +512,43 @@ export default function App() {
     }
   }, [checkedIngredients.length > 0]);
 
-
   // Identify active special ingredients based on checklist or search query
   const activeSpecialIngredients = useMemo(() => {
     const activeIds = new Set<string>();
-    
+
     // 1. From checked ingredients
-    SPECIAL_INGREDIENTS.forEach(sp => {
+    SPECIAL_INGREDIENTS.forEach((sp) => {
       if (checkedIngredients.includes(sp.id)) {
         activeIds.add(sp.id);
       }
-      if (sp.id === "trunk_summer" && (checkedIngredients.includes("trunk_winter") || checkedIngredients.includes("trunk_cooked"))) {
+      if (
+        sp.id === "trunk_summer" &&
+        (checkedIngredients.includes("trunk_winter") ||
+          checkedIngredients.includes("trunk_cooked"))
+      ) {
         activeIds.add("trunk_summer");
       }
-      if (sp.id === "plantmeat" && checkedIngredients.includes("plantmeat_cooked")) {
+      if (
+        sp.id === "plantmeat" &&
+        checkedIngredients.includes("plantmeat_cooked")
+      ) {
         activeIds.add("plantmeat");
+      }
+      if (
+        sp.id === "tallbirdegg" &&
+        checkedIngredients.includes("tallbirdegg_cooked")
+      ) {
+        activeIds.add("tallbirdegg");
       }
     });
 
     // 2. From search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      SPECIAL_INGREDIENTS.forEach(sp => {
-        const matchesQuery = sp.names.some(name => q.includes(name) || name.includes(q));
+      SPECIAL_INGREDIENTS.forEach((sp) => {
+        const matchesQuery = sp.names.some(
+          (name) => q.includes(name) || name.includes(q),
+        );
         if (matchesQuery) {
           activeIds.add(sp.id);
         }
@@ -343,10 +564,15 @@ export default function App() {
     let sourceList: Recipe[] = RECIPES;
 
     if (onlyShowCookable && checkedIngredients.length > 0) {
-      const cookableSet = new Set(getCookableRecipes(checkedIngredients, isPortable).map(r => r.id));
-      sourceList = sourceList.filter(recipe => {
+      const cookableSet = new Set(
+        getCookableRecipes(checkedIngredients, isPortable).map((r) => r.id),
+      );
+      sourceList = sourceList.filter((recipe) => {
         if (!isPortable && recipe.isPortable) return false;
-        return cookableSet.has(recipe.id) || isRecipeRelated(recipe, checkedIngredients);
+        return (
+          cookableSet.has(recipe.id) ||
+          isRecipeRelated(recipe, checkedIngredients)
+        );
       });
     }
 
@@ -356,7 +582,8 @@ export default function App() {
         if (categoryFilter === "healing") return recipe.hp >= 30;
         if (categoryFilter === "hunger") return recipe.hunger >= 75;
         if (categoryFilter === "sanity") return recipe.sanity >= 15;
-        if (categoryFilter === "ruined") return recipe.hp < 0 || recipe.sanity < 0;
+        if (categoryFilter === "ruined")
+          return recipe.hp < 0 || recipe.sanity < 0;
         return true;
       });
     }
@@ -369,12 +596,14 @@ export default function App() {
           r.name.toLowerCase().includes(q) ||
           r.englishName.toLowerCase().includes(q) ||
           r.description.toLowerCase().includes(q) ||
-          r.requirementsZH.toLowerCase().includes(q)
+          r.requirementsZH.toLowerCase().includes(q),
       );
     }
 
     const isSpecialRecipe = (recipe: Recipe) => {
-      return Array.from(activeSpecialIngredients).some(spId => isStronglyBoundTo(recipe, spId as string));
+      return Array.from(activeSpecialIngredients).some((spId) =>
+        isStronglyBoundTo(recipe, spId as string),
+      );
     };
 
     // Sort
@@ -405,17 +634,27 @@ export default function App() {
       const diff = valA - valB;
       return sortDirection === "desc" ? -diff : diff;
     });
-  }, [onlyShowCookable, checkedIngredients, searchQuery, sortBy, sortDirection, categoryFilter, isPortable, activeSpecialIngredients]);
-
+  }, [
+    onlyShowCookable,
+    checkedIngredients,
+    searchQuery,
+    sortBy,
+    sortDirection,
+    categoryFilter,
+    isPortable,
+    activeSpecialIngredients,
+  ]);
 
   const cookableRecipeIds = useMemo(() => {
-    return new Set(getCookableRecipes(checkedIngredients, isPortable).map(r => r.id));
+    return new Set(
+      getCookableRecipes(checkedIngredients, isPortable).map((r) => r.id),
+    );
   }, [checkedIngredients, isPortable]);
 
   // Handle checking/unchecking ingredient
   const toggleIngredientCheck = (id: string) => {
     setCheckedIngredients((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -497,14 +736,45 @@ export default function App() {
 
   // Ingredients grouped by category
   const groupedIngredients = useMemo(() => {
-    const groups: Record<string, { title: string; color: string; list: Ingredient[] }> = {
-      meat: { title: "🍖 肉食類 (Meats)", color: "border-red-900/30 text-rose-300 bg-red-950/20", list: [] },
-      veg: { title: "🥕 蔬菜類 (Vegetables)", color: "border-green-900/30 text-emerald-300 bg-emerald-950/20", list: [] },
-      fruit: { title: "🍇 水果類 (Fruits)", color: "border-pink-900/30 text-pink-300 bg-pink-950/20", list: [] },
-      fish: { title: "🐟 魚類 (Fish)", color: "border-blue-900/30 text-blue-350 bg-blue-955/20", list: [] },
-      egg: { title: "🥚 蛋類 (Eggs)", color: "border-yellow-950/30 text-yellow-105 bg-yellow-950/20", list: [] },
-      sweetener: { title: "🍯 甜味劑 (Sweeteners)", color: "border-amber-900/30 text-amber-305 bg-amber-955/20", list: [] },
-      miscellaneous: { title: "🥢 雜項 (Miscellaneous)", color: "border-stone-800 text-stone-300 bg-stone-900/20", list: [] },
+    const groups: Record<
+      string,
+      { title: string; color: string; list: Ingredient[] }
+    > = {
+      meat: {
+        title: "🍖 肉食類 (Meats)",
+        color: "border-red-900/30 text-rose-300 bg-red-950/20",
+        list: [],
+      },
+      veg: {
+        title: "🥕 蔬菜類 (Vegetables)",
+        color: "border-green-900/30 text-emerald-300 bg-emerald-950/20",
+        list: [],
+      },
+      fruit: {
+        title: "🍇 水果類 (Fruits)",
+        color: "border-pink-900/30 text-pink-300 bg-pink-950/20",
+        list: [],
+      },
+      fish: {
+        title: "🐟 魚類 (Fish)",
+        color: "border-blue-900/30 text-blue-300 bg-blue-950/20",
+        list: [],
+      },
+      egg: {
+        title: "🥚 蛋類 (Eggs)",
+        color: "border-yellow-950/30 text-yellow-105 bg-yellow-950/20",
+        list: [],
+      },
+      sweetener: {
+        title: "🍯 甜味劑 (Sweeteners)",
+        color: "border-amber-900/30 text-amber-300 bg-amber-950/20",
+        list: [],
+      },
+      miscellaneous: {
+        title: "🥢 雜項 (Miscellaneous)",
+        color: "border-stone-800 text-stone-300 bg-stone-900/20",
+        list: [],
+      },
     };
 
     INGREDIENTS.forEach((ing) => {
@@ -565,12 +835,18 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-150 font-sans selection:bg-amber-800 selection:text-white" id="main-container">
+    <div
+      className="min-h-screen bg-stone-950 text-stone-150 font-sans selection:bg-amber-800 selection:text-white"
+      id="main-container"
+    >
       {/* Decorative top wooden border-style indicator */}
       <div className="h-2 bg-gradient-to-r from-red-900 via-amber-700 to-red-900 w-full" />
 
       {/* Header Panel */}
-      <header className="border-b border-stone-800 bg-stone-900 py-6" id="header-panel">
+      <header
+        className="border-b border-stone-800 bg-stone-900 py-6"
+        id="header-panel"
+      >
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="rounded-xl p-1 border border-amber-500/30 bg-stone-950/60 animate-dst-glow overflow-hidden h-14 w-14 flex items-center justify-center">
@@ -645,27 +921,37 @@ export default function App() {
             >
               {/* Left Column: Ingredient Selection Drawer */}
               <div className="lg:col-span-4 flex flex-col gap-4">
-                <div className="bg-stone-900 border border-stone-800 rounded-xl p-5" id="inventory-panel">
+                <div
+                  className="bg-stone-900 border border-stone-800 rounded-xl p-5"
+                  id="inventory-panel"
+                >
                   <div className="flex items-center justify-between border-b border-stone-800 pb-3 mb-4">
                     <div>
                       <h2 className="text-md font-serif font-bold text-amber-500 flex items-center gap-1.5">
                         <CheckCircle className="h-4 w-4 text-amber-500" />
                         手頭有的食材勾選
                       </h2>
-                      <p className="text-xs text-stone-400">勾選後，下方食譜庫會自動找出能用這些食材烹飪的料理。</p>
+                      <p className="text-xs text-stone-400">
+                        勾選後，下方食譜庫會自動找出能用這些食材烹飪的料理。
+                      </p>
                     </div>
                   </div>
 
                   {/* Compact Grid of Category Block Tiles */}
-                  <div className="grid grid-cols-7 gap-1 mt-2.5 mb-4" id="category-tiles-grid">
+                  <div
+                    className="grid grid-cols-7 gap-1 mt-2.5 mb-4"
+                    id="category-tiles-grid"
+                  >
                     {groupedIngredients.map(([catKey, categoryData]) => {
                       const isExpanded = !!expandedCatRecipes[catKey];
-                      const selectedCount = categoryData.list.filter(i => checkedIngredients.includes(i.id)).length;
-                      
+                      const selectedCount = categoryData.list.filter((i) =>
+                        checkedIngredients.includes(i.id),
+                      ).length;
+
                       // Extract emoji
                       const match = categoryData.title.match(/^(\S+)\s/);
                       const emoji = match ? match[1] : "🍽️";
-                      
+
                       const catNamesShort: Record<string, string> = {
                         meat: "肉類",
                         veg: "蔬菜",
@@ -673,7 +959,7 @@ export default function App() {
                         fish: "魚類",
                         egg: "蛋類",
                         sweetener: "甜味",
-                        miscellaneous: "雜項"
+                        miscellaneous: "雜項",
                       };
                       const shortName = catNamesShort[catKey] || "雜項";
 
@@ -683,21 +969,36 @@ export default function App() {
                           onClick={() => toggleCatRecipes(catKey)}
                           className={`flex flex-col items-center justify-between py-2 px-0.5 rounded-lg border text-center transition-all duration-150 cursor-pointer ${
                             isExpanded
-                              ? "bg-amber-600 border-amber-500 text-stone-950 font-bold shadow-md shadow-amber-955/40 scale-[1.03]"
+                              ? "bg-amber-600 border-amber-500 text-stone-950 font-bold shadow-md shadow-amber-950/40 scale-[1.03]"
                               : "bg-stone-900 border-stone-850 text-stone-400 hover:border-stone-750 hover:bg-stone-850"
                           }`}
                           id={`cat-tile-${catKey}`}
                         >
-                          <span className="text-base sm:text-lg mb-0.5 select-none">{emoji}</span>
-                          <span className={`text-[10px] leading-none tracking-tight font-bold truncate max-w-full ${isExpanded ? "text-stone-950" : "text-stone-200"}`}>
+                          <span className="text-base sm:text-lg mb-0.5 select-none">
+                            {emoji}
+                          </span>
+                          <span
+                            className={`text-[10px] leading-none tracking-tight font-bold truncate max-w-full ${isExpanded ? "text-stone-950" : "text-stone-200"}`}
+                          >
                             {shortName}
                           </span>
-                          <span className={`text-[8px] font-mono mt-1 leading-none ${isExpanded ? "text-stone-900/95 font-bold" : "text-stone-500"}`}>
+                          <span
+                            className={`text-[8px] font-mono mt-1 leading-none ${isExpanded ? "text-stone-900/95 font-bold" : "text-stone-500"}`}
+                          >
                             {selectedCount > 0 ? (
-                              <strong className={isExpanded ? "text-stone-950 font-black" : "text-amber-500 font-bold"}>{selectedCount}</strong>
+                              <strong
+                                className={
+                                  isExpanded
+                                    ? "text-stone-950 font-black"
+                                    : "text-amber-500 font-bold"
+                                }
+                              >
+                                {selectedCount}
+                              </strong>
                             ) : (
                               "0"
-                            )}/{categoryData.list.length}
+                            )}
+                            /{categoryData.list.length}
                           </span>
                         </button>
                       );
@@ -710,7 +1011,7 @@ export default function App() {
                       {groupedIngredients.map(([catKey, categoryData]) => {
                         const isExpanded = !!expandedCatRecipes[catKey];
                         if (!isExpanded) return null;
-                        
+
                         return (
                           <motion.div
                             key={`rec-cat-list-${catKey}`}
@@ -735,34 +1036,56 @@ export default function App() {
 
                             <div className="p-3 grid grid-cols-2 gap-1.5 bg-stone-950/30">
                               {categoryData.list.map((ing) => {
-                                const isChecked = checkedIngredients.includes(ing.id);
+                                const isChecked = checkedIngredients.includes(
+                                  ing.id,
+                                );
                                 return (
                                   <button
                                     key={ing.id}
-                                    onClick={() => toggleIngredientCheck(ing.id)}
+                                    onClick={() =>
+                                      toggleIngredientCheck(ing.id)
+                                    }
                                     className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition border cursor-pointer ${
                                       isChecked
                                         ? "bg-amber-600/25 text-white border-amber-500/60 font-medium"
                                         : "bg-stone-900/40 text-stone-400 border-stone-850 hover:border-stone-750"
                                     }`}
                                   >
-                                    <IngredientImage ingredientId={ing.id} avatarText={ing.avatarText} className="w-5 h-5 object-contain shrink-0" />
+                                    <IngredientImage
+                                      ingredientId={ing.id}
+                                      avatarText={ing.avatarText}
+                                      className="w-5 h-5 object-contain shrink-0"
+                                    />
                                     <div className="text-left truncate flex-1 min-w-0">
-                                      <div className="truncate font-medium">{ing.name}</div>
+                                      <div className="truncate font-medium">
+                                        {ing.name}
+                                      </div>
                                       <div className="text-[9px] text-stone-500 truncate mt-[-2px]">
-                                        {ing.values.meat ? `肉:${ing.values.meat} ` : ""}
-                                        {ing.values.veg ? `菜:${ing.values.veg} ` : ""}
-                                        {ing.values.fruit ? `果:${ing.values.fruit} ` : ""}
+                                        {ing.values.meat
+                                          ? `肉:${ing.values.meat} `
+                                          : ""}
+                                        {ing.values.veg
+                                          ? `菜:${ing.values.veg} `
+                                          : ""}
+                                        {ing.values.fruit
+                                          ? `果:${ing.values.fruit} `
+                                          : ""}
                                         {ing.values.monster ? `怪 ` : ""}
-                                        {ing.values.egg ? `蛋:${ing.values.egg} ` : ""}
+                                        {ing.values.egg
+                                          ? `蛋:${ing.values.egg} `
+                                          : ""}
                                         {ing.values.sweetener ? `糖 ` : ""}
                                         {ing.values.dairy ? `奶 ` : ""}
                                         {ing.values.ice ? `冰 ` : ""}
                                         {ing.values.twigs ? `樹枝 ` : ""}
                                       </div>
                                     </div>
-                                    <div className={`h-3.5 w-3.5 rounded flex items-center justify-center border shrink-0 ${isChecked ? "bg-amber-500 border-amber-500" : "border-stone-700"}`}>
-                                      {isChecked && <div className="h-1.5 w-1.5 bg-stone-950 rounded-sm" />}
+                                    <div
+                                      className={`h-3.5 w-3.5 rounded flex items-center justify-center border shrink-0 ${isChecked ? "bg-amber-500 border-amber-500" : "border-stone-700"}`}
+                                    >
+                                      {isChecked && (
+                                        <div className="h-1.5 w-1.5 bg-stone-950 rounded-sm" />
+                                      )}
                                     </div>
                                   </button>
                                 );
@@ -777,7 +1100,9 @@ export default function App() {
                   <div className="mt-4 pt-3 border-t border-stone-800 bg-stone-905 flex items-center justify-between text-xs text-stone-400">
                     <span className="flex items-center gap-1.5">
                       <span>已勾選食材庫：</span>
-                      <span className="font-mono text-amber-500 font-bold">{checkedIngredients.length} / {INGREDIENTS.length} 種</span>
+                      <span className="font-mono text-amber-500 font-bold">
+                        {checkedIngredients.length} / {INGREDIENTS.length} 種
+                      </span>
                     </span>
                     <button
                       onClick={clearAllIngredients}
@@ -792,14 +1117,19 @@ export default function App() {
               {/* Right Column: Recipe Catalog & Matching Results */}
               <div className="lg:col-span-8 flex flex-col gap-4">
                 {/* Search & Sorting Panel */}
-                <div className="bg-stone-900 border border-stone-800 rounded-xl p-5" id="filter-controls">
+                <div
+                  className="bg-stone-900 border border-stone-800 rounded-xl p-5"
+                  id="filter-controls"
+                >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div>
                       <h2 className="text-md font-serif font-bold text-stone-100 flex items-center gap-2">
                         <Layers className="h-4.5 w-4.5 text-amber-500" />
                         遊戲配方資料庫
                       </h2>
-                      <p className="text-xs text-stone-400">目前庫存：共 {RECIPES.length} 款官方認證大鍋料理</p>
+                      <p className="text-xs text-stone-400">
+                        目前庫存：共 {RECIPES.length} 款官方認證大鍋料理
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -807,12 +1137,27 @@ export default function App() {
                         <input
                           type="checkbox"
                           checked={onlyShowCookable}
-                          onChange={(e) => setOnlyShowCookable(e.target.checked)}
+                          onChange={(e) =>
+                            setOnlyShowCookable(e.target.checked)
+                          }
                           className="sr-only peer"
                         />
                         <div className="w-9 h-5 bg-stone-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-stone-300 after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600" />
                         <span className="ms-2 text-xs font-medium text-stone-300">
-                          篩選手頭食材相關 ({getCookableRecipes(checkedIngredients, isPortable).length} 可做 / {RECIPES.filter(r => (!isPortable && r.isPortable) ? false : isRecipeRelated(r, checkedIngredients)).length} 相關)
+                          篩選手頭食材相關 (
+                          {
+                            getCookableRecipes(checkedIngredients, isPortable)
+                              .length
+                          }{" "}
+                          可做 /{" "}
+                          {
+                            RECIPES.filter((r) =>
+                              !isPortable && r.isPortable
+                                ? false
+                                : isRecipeRelated(r, checkedIngredients),
+                            ).length
+                          }{" "}
+                          相關)
                         </span>
                       </label>
                     </div>
@@ -833,7 +1178,9 @@ export default function App() {
 
                     {/* Sorting criteria */}
                     <div className="flex items-center gap-2 md:col-span-5">
-                      <span className="text-[11px] text-stone-400 shrink-0">排序基準:</span>
+                      <span className="text-[11px] text-stone-400 shrink-0">
+                        排序基準:
+                      </span>
                       <div className="flex bg-stone-950 p-1 rounded-lg border border-stone-800 w-full">
                         <button
                           onClick={() => {
@@ -841,10 +1188,15 @@ export default function App() {
                             setSortDirection("desc");
                           }}
                           className={`flex-1 py-1 text-[11px] font-medium rounded transition cursor-pointer flex items-center justify-center gap-1 ${
-                            sortBy === "hp" ? "bg-rose-950/40 text-rose-300 font-bold" : "text-stone-400 hover:text-stone-200"
+                            sortBy === "hp"
+                              ? "bg-rose-950/40 text-rose-300 font-bold"
+                              : "text-stone-400 hover:text-stone-200"
                           }`}
                         >
-                          <StateIcon type="hp" className="w-3.5 h-3.5 object-contain shrink-0" />
+                          <StateIcon
+                            type="hp"
+                            className="w-3.5 h-3.5 object-contain shrink-0"
+                          />
                           <span>+血量</span>
                         </button>
                         <button
@@ -853,10 +1205,15 @@ export default function App() {
                             setSortDirection("desc");
                           }}
                           className={`flex-1 py-1 text-[11px] font-medium rounded transition cursor-pointer flex items-center justify-center gap-1 ${
-                            sortBy === "hunger" ? "bg-amber-950/40 text-amber-300 font-bold" : "text-stone-400 hover:text-stone-200"
+                            sortBy === "hunger"
+                              ? "bg-amber-950/40 text-amber-300 font-bold"
+                              : "text-stone-400 hover:text-stone-200"
                           }`}
                         >
-                          <StateIcon type="hunger" className="w-3.5 h-3.5 object-contain shrink-0" />
+                          <StateIcon
+                            type="hunger"
+                            className="w-3.5 h-3.5 object-contain shrink-0"
+                          />
                           <span>+飢餓值</span>
                         </button>
                         <button
@@ -865,10 +1222,15 @@ export default function App() {
                             setSortDirection("desc");
                           }}
                           className={`flex-1 py-1 text-[11px] font-medium rounded transition cursor-pointer flex items-center justify-center gap-1 ${
-                            sortBy === "sanity" ? "bg-sky-950/40 text-sky-300 font-bold" : "text-stone-400 hover:text-stone-200"
+                            sortBy === "sanity"
+                              ? "bg-sky-950/40 text-sky-300 font-bold"
+                              : "text-stone-400 hover:text-stone-200"
                           }`}
                         >
-                          <StateIcon type="sanity" className="w-3.5 h-3.5 object-contain shrink-0" />
+                          <StateIcon
+                            type="sanity"
+                            className="w-3.5 h-3.5 object-contain shrink-0"
+                          />
                           <span>+san值</span>
                         </button>
                       </div>
@@ -883,8 +1245,12 @@ export default function App() {
                       >
                         <option value="all">🔍 全部效果分類</option>
                         <option value="healing">❤️ 神級回血 (HP&gt;=30)</option>
-                        <option value="hunger">🍖 大力補腹 (飢餓&gt;=75)</option>
-                        <option value="sanity">🌀 養腦提神 (理智&gt;=15)</option>
+                        <option value="hunger">
+                          🍖 大力補腹 (飢餓&gt;=75)
+                        </option>
+                        <option value="sanity">
+                          🌀 養腦提神 (理智&gt;=15)
+                        </option>
                         <option value="ruined">💀 副作用料理 (負值)</option>
                       </select>
                     </div>
@@ -893,7 +1259,13 @@ export default function App() {
                   {/* Active Filters Summary */}
                   <div className="flex flex-wrap items-center justify-between mt-3 pt-3 border-t border-stone-800 text-[11px] text-stone-400">
                     <div className="flex gap-2">
-                      <span>當前篩選出：<strong className="text-amber-500 font-mono text-xs">{filteredRecipes.length}</strong> 項配方</span>
+                      <span>
+                        當前篩選出：
+                        <strong className="text-amber-500 font-mono text-xs">
+                          {filteredRecipes.length}
+                        </strong>{" "}
+                        項配方
+                      </span>
                       {searchQuery && <span>• 搜尋「{searchQuery}」</span>}
                       {onlyShowCookable && <span>• 僅限手頭食材</span>}
                       {categoryFilter !== "all" && <span>• 專屬功效</span>}
@@ -917,7 +1289,9 @@ export default function App() {
                 {filteredRecipes.length === 0 ? (
                   <div className="bg-stone-900 border border-stone-800 rounded-xl p-12 text-center">
                     <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-3" />
-                    <h3 className="text-stone-200 font-serif font-bold text-lg">沒有找到對應的食譜</h3>
+                    <h3 className="text-stone-200 font-serif font-bold text-lg">
+                      沒有找到對應的食譜
+                    </h3>
                     <p className="text-xs text-stone-400 max-w-md mx-auto mt-1">
                       在你勾選的手頭食材中，沒有搭配出符合該目標與搜尋關鍵字的菜餚。試試勾選更多的食材（如大肉、蔬菜或樹枝！）
                     </p>
@@ -936,10 +1310,19 @@ export default function App() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredRecipes.map((recipe) => {
                       // Check if user currently has the "idealCombo" ingredients selected
-                      const missingForIdeal = recipe.idealCombo.filter(id => !checkedIngredients.includes(id));
+                      const missingForIdeal = recipe.idealCombo.filter(
+                        (id) => !checkedIngredients.includes(id),
+                      );
                       const isFullyCookable = cookableRecipeIds.has(recipe.id);
-                      const missingReqs = getMissingRequirements(recipe, checkedIngredients);
-                      const isSpecial = Array.from(activeSpecialIngredients).some(spId => isStronglyBoundTo(recipe, spId as string));
+                      const missingReqs = getMissingRequirements(
+                        recipe,
+                        checkedIngredients,
+                      );
+                      const isSpecial = Array.from(
+                        activeSpecialIngredients,
+                      ).some((spId) =>
+                        isStronglyBoundTo(recipe, spId as string),
+                      );
 
                       return (
                         <div
@@ -955,7 +1338,10 @@ export default function App() {
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <h3 className="text-sm font-bold text-stone-100 flex items-center gap-1.5">
-                                  <RecipeImage recipeId={recipe.id} className="w-6 h-6 object-contain shrink-0" />
+                                  <RecipeImage
+                                    recipeId={recipe.id}
+                                    className="w-6 h-6 object-contain shrink-0"
+                                  />
                                   {recipe.name}
                                   {isSpecial && (
                                     <span className="px-1.5 py-0.5 text-[8px] font-bold bg-amber-500 text-stone-950 rounded flex items-center gap-0.5 leading-none shrink-0 shadow-sm animate-pulse">
@@ -969,16 +1355,19 @@ export default function App() {
                                   )}
                                 </h3>
                                 <p className="text-[10px] text-stone-400 font-mono uppercase">
-                                  {recipe.englishName} • 優先級: {recipe.priority}
+                                  {recipe.englishName} • 優先級:{" "}
+                                  {recipe.priority}
                                 </p>
                               </div>
 
                               <div className="text-[10px] px-1.5 py-0.5 rounded bg-stone-950 font-mono text-stone-400 border border-stone-800 flex items-center gap-1">
                                 <Clock className="h-2.5 w-2.5 text-amber-500" />
-                                <span>煮:{recipe.cookTime}s • 爛:{recipe.perishDays}天</span>
+                                <span>
+                                  煮:{recipe.cookTime}s • 爛:{recipe.perishDays}
+                                  天
+                                </span>
                               </div>
                             </div>
-
 
                             <p className="text-xs text-stone-300 mt-2 line-clamp-2 leading-relaxed bg-stone-950/20 p-2 rounded border border-stone-850">
                               {recipe.description}
@@ -994,42 +1383,59 @@ export default function App() {
                               </div>
 
                               <div className="text-[10px]">
-                                <span className="text-stone-400">💡 經典推薦搭配：</span>
+                                <span className="text-stone-400">
+                                  💡 經典推薦搭配：
+                                </span>
                                 <div className="flex flex-wrap items-center gap-1 mt-1">
                                   {recipe.idealCombo.map((id, idx) => {
-                                    const ing = INGREDIENTS.find(i => i.id === id);
+                                    const ing = INGREDIENTS.find(
+                                      (i) => i.id === id,
+                                    );
                                     if (!ing) return null;
-                                    const hasIt = checkedIngredients.includes(id);
+                                    const hasIt =
+                                      checkedIngredients.includes(id);
                                     return (
                                       <span
                                         key={idx}
                                         className={`px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5 border font-mono ${
                                           hasIt
-                                            ? "bg-amber-955 text-stone-200 border-amber-900/30"
+                                            ? "bg-amber-950 text-stone-200 border-amber-900/30"
                                             : "bg-stone-950 text-stone-500 line-through border-transparent"
                                         }`}
                                         title={ing.name}
                                       >
-                                        <IngredientImage ingredientId={ing.id} avatarText={ing.avatarText} className="w-4 h-4 object-contain" />
+                                        <IngredientImage
+                                          ingredientId={ing.id}
+                                          avatarText={ing.avatarText}
+                                          className="w-4 h-4 object-contain"
+                                        />
                                         <span>{ing.name}</span>
                                       </span>
                                     );
                                   })}
 
                                   {isFullyCookable ? (
-                                    <span className="text-[9px] text-emerald-500 ml-1 font-bold">✓ 可製作</span>
+                                    <span className="text-[9px] text-emerald-500 ml-1 font-bold">
+                                      ✓ 可製作
+                                    </span>
                                   ) : (
-                                    <span className="text-[9px] text-amber-500 ml-1 font-bold">⚠️ 缺食材</span>
+                                    <span className="text-[9px] text-amber-500 ml-1 font-bold">
+                                      ⚠️ 缺食材
+                                    </span>
                                   )}
                                 </div>
                               </div>
-                              
+
                               {!isFullyCookable && missingReqs.length > 0 && (
-                                <div className="mt-2 text-[10px] bg-amber-955/20 border border-amber-900/35 rounded-lg p-2 text-amber-300">
-                                  <span className="font-bold block text-amber-400 mb-0.5">💡 還需滿足以下屬性或食材之一：</span>
+                                <div className="mt-2 text-[10px] bg-amber-950/20 border border-amber-900/35 rounded-lg p-2 text-amber-300">
+                                  <span className="font-bold block text-amber-400 mb-0.5">
+                                    💡 還需滿足以下屬性或食材之一：
+                                  </span>
                                   <ul className="list-disc list-inside space-y-0.5 font-mono">
                                     {missingReqs.map((req, idx) => (
-                                      <li key={idx} className="leading-normal">{req}</li>
+                                      <li key={idx} className="leading-normal">
+                                        {req}
+                                      </li>
                                     ))}
                                   </ul>
                                 </div>
@@ -1040,31 +1446,54 @@ export default function App() {
                           {/* Stats bottom bar */}
                           <div className="bg-stone-950/50 border-t border-stone-800/80 px-4 py-2.5 grid grid-cols-3 gap-2">
                             <div className="flex items-center gap-1">
-                              <StateIcon type="hp" className="w-5 h-5 object-contain shrink-0" />
+                              <StateIcon
+                                type="hp"
+                                className="w-5 h-5 object-contain shrink-0"
+                              />
                               <div className="leading-none">
-                                <div className="text-[9px] text-stone-400">+血量</div>
-                                <div className={`text-xs font-bold font-mono ${recipe.hp >= 30 ? "text-rose-400" : recipe.hp < 0 ? "text-red-500" : "text-stone-300"}`}>
+                                <div className="text-[9px] text-stone-400">
+                                  +血量
+                                </div>
+                                <div
+                                  className={`text-xs font-bold font-mono ${recipe.hp >= 30 ? "text-rose-400" : recipe.hp < 0 ? "text-red-500" : "text-stone-300"}`}
+                                >
                                   {recipe.hp > 0 ? `+${recipe.hp}` : recipe.hp}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-1">
-                              <StateIcon type="hunger" className="w-5 h-5 object-contain shrink-0" />
+                              <StateIcon
+                                type="hunger"
+                                className="w-5 h-5 object-contain shrink-0"
+                              />
                               <div className="leading-none">
-                                <div className="text-[9px] text-stone-400">+飢餓值</div>
-                                <div className={`text-xs font-bold font-mono ${recipe.hunger >= 75 ? "text-amber-400" : "text-stone-300"}`}>
+                                <div className="text-[9px] text-stone-400">
+                                  +飢餓值
+                                </div>
+                                <div
+                                  className={`text-xs font-bold font-mono ${recipe.hunger >= 75 ? "text-amber-400" : "text-stone-300"}`}
+                                >
                                   +{recipe.hunger}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-1">
-                              <StateIcon type="sanity" className="w-5 h-5 object-contain shrink-0" />
+                              <StateIcon
+                                type="sanity"
+                                className="w-5 h-5 object-contain shrink-0"
+                              />
                               <div className="leading-none">
-                                <div className="text-[9px] text-stone-400">+san值</div>
-                                <div className={`text-xs font-bold font-mono ${recipe.sanity >= 20 ? "text-sky-300" : recipe.sanity < 0 ? "text-purple-400" : "text-stone-300"}`}>
-                                  {recipe.sanity > 0 ? `+${recipe.sanity}` : recipe.sanity}
+                                <div className="text-[9px] text-stone-400">
+                                  +san值
+                                </div>
+                                <div
+                                  className={`text-xs font-bold font-mono ${recipe.sanity >= 20 ? "text-sky-300" : recipe.sanity < 0 ? "text-purple-400" : "text-stone-300"}`}
+                                >
+                                  {recipe.sanity > 0
+                                    ? `+${recipe.sanity}`
+                                    : recipe.sanity}
                                 </div>
                               </div>
                             </div>
@@ -1090,7 +1519,10 @@ export default function App() {
             >
               {/* Left Column: Visual simulator pot and interactive slots */}
               <div className="lg:col-span-6 flex flex-col gap-4">
-                <div className="bg-stone-900 border border-stone-850 rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[500px]" id="cook-pot-box">
+                <div
+                  className="bg-stone-900 border border-stone-850 rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[500px]"
+                  id="cook-pot-box"
+                >
                   {/* Fire visual behind the pot */}
                   <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-orange-650/20 to-transparent pointer-events-none" />
 
@@ -1101,39 +1533,55 @@ export default function App() {
 
                   {/* Simulator Grid wrapper */}
                   <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
-                    
                     {/* The Visual Pot Container */}
                     <div className="relative flex flex-col items-center py-6">
-                      
                       {/* Sizzling steam effects */}
                       {isCooking && (
                         <div className="absolute top-[-50px] flex items-center justify-center gap-3">
-                          <span className="animate-sizzle-bubble-1 text-2xl filter blur-[1px]">💨</span>
-                          <span className="animate-sizzle-bubble-2 text-xl filter blur-[2px]">💨</span>
-                          <span className="animate-sizzle-bubble-3 text-2xl filter blur-[1px]">💨</span>
+                          <span className="animate-sizzle-bubble-1 text-2xl filter blur-[1px]">
+                            💨
+                          </span>
+                          <span className="animate-sizzle-bubble-2 text-xl filter blur-[2px]">
+                            💨
+                          </span>
+                          <span className="animate-sizzle-bubble-3 text-2xl filter blur-[1px]">
+                            💨
+                          </span>
                         </div>
                       )}
 
                       {/* Cook Pot Graphic */}
-                      <div className={`relative h-44 w-44 rounded-full bg-stone-800 border-8 border-stone-950 flex items-center justify-center shadow-xl shadow-stone-950/70 ${isCooking ? "animate-wiggle-pot ring-4 ring-orange-500/30" : "animate-dst-glow"}`}>
+                      <div
+                        className={`relative h-44 w-44 rounded-full bg-stone-800 border-8 border-stone-950 flex items-center justify-center shadow-xl shadow-stone-950/70 ${isCooking ? "animate-wiggle-pot ring-4 ring-orange-500/30" : "animate-dst-glow"}`}
+                      >
                         <div className="absolute inset-2 rounded-full border border-stone-700 bg-stone-900 flex flex-col items-center justify-center text-center p-3">
                           {!isCooking && simulatedResult ? (
                             <div className="flex flex-col items-center justify-center animate-fade-in">
                               <span className="text-4xl">
-                                {simulatedResult.id === "wet_goop" ? "💀" : "🍲"}
+                                {simulatedResult.id === "wet_goop"
+                                  ? "💀"
+                                  : "🍲"}
                               </span>
-                              <span className="text-xs font-serif font-bold text-amber-400 mt-1.5">{simulatedResult.name}</span>
-                              <span className="text-[9px] text-stone-500 font-mono">烹飪成功!</span>
+                              <span className="text-xs font-serif font-bold text-amber-400 mt-1.5">
+                                {simulatedResult.name}
+                              </span>
+                              <span className="text-[9px] text-stone-500 font-mono">
+                                烹飪成功!
+                              </span>
                             </div>
                           ) : isCooking ? (
                             <div className="flex flex-col items-center justify-center">
                               <Flame className="h-10 w-10 text-orange-500 animate-bounce" />
-                              <span className="text-xs text-orange-400 font-mono mt-1 font-bold">COOKING {cookingProgress}%</span>
+                              <span className="text-xs text-orange-400 font-mono mt-1 font-bold">
+                                COOKING {cookingProgress}%
+                              </span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center text-stone-500">
                               <Soup className="h-10 w-10 mb-1 opacity-40 text-stone-400" />
-                              <span className="text-[11px] font-medium">放入4種食材</span>
+                              <span className="text-[11px] font-medium">
+                                放入4種食材
+                              </span>
                             </div>
                           )}
                         </div>
@@ -1143,14 +1591,15 @@ export default function App() {
                     {/* 4 Interactive Ingredient Slots */}
                     <div className="grid grid-cols-4 gap-3 w-full">
                       {potSlots.map((ingId, idx) => {
-                        const ingredient = INGREDIENTS.find((i) => i.id === ingId);
+                        const ingredient = INGREDIENTS.find(
+                          (i) => i.id === ingId,
+                        );
                         return (
-                          <div
-                            key={idx}
-                            className="flex flex-col items-center"
-                          >
+                          <div key={idx} className="flex flex-col items-center">
                             <button
-                              onClick={() => ingId && handleRemoveIngredientFromPot(idx)}
+                              onClick={() =>
+                                ingId && handleRemoveIngredientFromPot(idx)
+                              }
                               disabled={isCooking || !ingId}
                               className={`h-16 w-full rounded-xl border flex flex-col items-center justify-center relative cursor-pointer group transition ${
                                 ingId
@@ -1161,8 +1610,14 @@ export default function App() {
                             >
                               {ingId && ingredient ? (
                                 <div className="text-center">
-                                   <IngredientImage ingredientId={ingredient.id} avatarText={ingredient.avatarText} className="w-6 h-6 object-contain mx-auto" />
-                                  <span className="text-[10px] block mt-0.5 font-bold truncate max-w-[50px]">{ingredient.name}</span>
+                                  <IngredientImage
+                                    ingredientId={ingredient.id}
+                                    avatarText={ingredient.avatarText}
+                                    className="w-6 h-6 object-contain mx-auto"
+                                  />
+                                  <span className="text-[10px] block mt-0.5 font-bold truncate max-w-[50px]">
+                                    {ingredient.name}
+                                  </span>
                                 </div>
                               ) : (
                                 <Plus className="h-4 w-4 text-stone-600 group-hover:text-amber-500 transition-all" />
@@ -1175,7 +1630,9 @@ export default function App() {
                                 </div>
                               )}
                             </button>
-                            <span className="text-[10px] text-stone-500 font-mono mt-1">孔位 {idx + 1}</span>
+                            <span className="text-[10px] text-stone-500 font-mono mt-1">
+                              孔位 {idx + 1}
+                            </span>
                           </div>
                         );
                       })}
@@ -1183,7 +1640,7 @@ export default function App() {
 
                     {/* Warly Portable Pot Toggle */}
                     <div className="flex items-center justify-between w-full bg-stone-950/60 p-2.5 rounded-xl border border-stone-850/85 mt-2">
-                      <label className="text-[11px] text-stone-350 flex items-center gap-1.5 cursor-pointer">
+                      <label className="text-[11px] text-stone-300 flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={isPortable}
@@ -1196,7 +1653,9 @@ export default function App() {
                         />
                         <span>使用 Warly 的可攜式烹飪鍋 (Portable Pot)</span>
                       </label>
-                      <span className="text-[8px] px-1.5 py-0.5 bg-purple-950 text-purple-300 border border-purple-800 rounded font-mono font-bold">Warly</span>
+                      <span className="text-[8px] px-1.5 py-0.5 bg-purple-950 text-purple-300 border border-purple-800 rounded font-mono font-bold">
+                        Warly
+                      </span>
                     </div>
 
                     {/* Simulation Controller utilities */}
@@ -1230,26 +1689,69 @@ export default function App() {
                         <Layers className="h-3.5 w-3.5 text-amber-500/80" />
                         當前鍋內食材係數 (Coefficients)
                       </h4>
-                      <div className="grid grid-cols-3 gap-y-1 gap-x-2 text-stone-350 font-mono text-[10px]">
-                        <div>🍖 肉類: <span className="text-amber-400 font-bold">{currentPotValues.meat || 0}</span></div>
-                        <div>🥕 蔬菜: <span className="text-emerald-400 font-bold">{currentPotValues.veg || 0}</span></div>
-                        <div>🍉 水果: <span className="text-pink-400 font-bold">{currentPotValues.fruit || 0}</span></div>
-                        <div>🥚 蛋類: <span className="text-yellow-250 font-bold">{currentPotValues.egg || 0}</span></div>
-                        <div>🍯 糖類: <span className="text-amber-500 font-bold">{currentPotValues.sweetener || 0}</span></div>
-                        <div>🥛 奶類: <span className="text-sky-300 font-bold">{currentPotValues.dairy || 0}</span></div>
-                        <div>🐟 魚類: <span className="text-blue-400 font-bold">{currentPotValues.fish || 0}</span></div>
-                        <div>🪵 樹枝: <span className="text-stone-400 font-bold">{currentPotValues.twigs || 0}</span></div>
-                        <div>❄️ 冰塊: <span className="text-cyan-350 font-bold">{currentPotValues.ice || 0}</span></div>
+                      <div className="grid grid-cols-3 gap-y-1 gap-x-2 text-stone-300 font-mono text-[10px]">
+                        <div>
+                          🍖 肉類:{" "}
+                          <span className="text-amber-400 font-bold">
+                            {currentPotValues.meat || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🥕 蔬菜:{" "}
+                          <span className="text-emerald-400 font-bold">
+                            {currentPotValues.veg || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🍉 水果:{" "}
+                          <span className="text-pink-400 font-bold">
+                            {currentPotValues.fruit || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🥚 蛋類:{" "}
+                          <span className="text-yellow-250 font-bold">
+                            {currentPotValues.egg || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🍯 糖類:{" "}
+                          <span className="text-amber-500 font-bold">
+                            {currentPotValues.sweetener || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🥛 奶類:{" "}
+                          <span className="text-sky-300 font-bold">
+                            {currentPotValues.dairy || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🐟 魚類:{" "}
+                          <span className="text-blue-400 font-bold">
+                            {currentPotValues.fish || 0}
+                          </span>
+                        </div>
+                        <div>
+                          🪵 樹枝:{" "}
+                          <span className="text-stone-400 font-bold">
+                            {currentPotValues.twigs || 0}
+                          </span>
+                        </div>
+                        <div>
+                          ❄️ 冰塊:{" "}
+                          <span className="text-cyan-300 font-bold">
+                            {currentPotValues.ice || 0}
+                          </span>
+                        </div>
                       </div>
                     </div>
-
                   </div>
                 </div>
               </div>
 
               {/* Right Column: Cooking outcome and manual selections drawer */}
               <div className="lg:col-span-6 flex flex-col gap-4">
-                
                 {/* Result Block with animation details */}
                 <AnimatePresence mode="wait">
                   {simulatedResult ? (
@@ -1262,17 +1764,24 @@ export default function App() {
                     >
                       <div className="flex items-center gap-2 mb-4 border-b border-stone-800 pb-3">
                         <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
-                        <h4 className="text-md font-serif font-bold text-white">砂鍋烹飪報告 (Result Found!)</h4>
+                        <h4 className="text-md font-serif font-bold text-white">
+                          砂鍋烹飪報告 (Result Found!)
+                        </h4>
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-stone-950 p-4 rounded-xl mb-4 border border-stone-850">
                         <div className="h-16 w-16 rounded-xl bg-amber-500/10 border border-amber-500/20 text-3xl flex items-center justify-center shrink-0">
-                          <RecipeImage recipeId={simulatedResult.id} className="w-12 h-12 object-contain" />
+                          <RecipeImage
+                            recipeId={simulatedResult.id}
+                            className="w-12 h-12 object-contain"
+                          />
                         </div>
 
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h2 className="text-lg font-serif font-bold text-amber-400">{simulatedResult.name}</h2>
+                            <h2 className="text-lg font-serif font-bold text-amber-400">
+                              {simulatedResult.name}
+                            </h2>
                             {simulatedResult.isPortable && (
                               <span className="px-1.5 py-0.5 text-[9px] font-bold bg-purple-950 text-purple-300 border border-purple-800 rounded leading-none">
                                 Warly 專屬
@@ -1282,35 +1791,66 @@ export default function App() {
                               優先級: {simulatedResult.priority}
                             </span>
                           </div>
-                          <p className="text-xs text-stone-400 mt-0.5">{simulatedResult.englishName}</p>
-                          <p className="text-xs text-amber-100/90 leading-relaxed mt-1">{simulatedResult.description}</p>
+                          <p className="text-xs text-stone-400 mt-0.5">
+                            {simulatedResult.englishName}
+                          </p>
+                          <p className="text-xs text-amber-100/90 leading-relaxed mt-1">
+                            {simulatedResult.description}
+                          </p>
                         </div>
                       </div>
 
                       {/* Display Restoration Values */}
-                      <h4 className="text-xs text-stone-400 font-mono mb-2 uppercase tracking-wider">★ 料理食用恢復值：</h4>
+                      <h4 className="text-xs text-stone-400 font-mono mb-2 uppercase tracking-wider">
+                        ★ 料理食用恢復值：
+                      </h4>
                       <div className="grid grid-cols-3 gap-3 mb-4">
                         <div className="bg-red-950/20 border border-red-900/30 p-3 rounded-xl text-center flex flex-col items-center justify-center">
-                          <StateIcon type="hp" className="w-6 h-6 object-contain mb-1" />
-                          <div className="text-[10px] text-stone-400 leading-none">+血量</div>
-                          <div className={`text-sm font-bold font-mono mt-1 ${simulatedResult.hp >= 30 ? "text-rose-400" : simulatedResult.hp < 0 ? "text-red-500" : "text-stone-200"}`}>
-                            {simulatedResult.hp > 0 ? `+${simulatedResult.hp}` : simulatedResult.hp}
+                          <StateIcon
+                            type="hp"
+                            className="w-6 h-6 object-contain mb-1"
+                          />
+                          <div className="text-[10px] text-stone-400 leading-none">
+                            +血量
+                          </div>
+                          <div
+                            className={`text-sm font-bold font-mono mt-1 ${simulatedResult.hp >= 30 ? "text-rose-400" : simulatedResult.hp < 0 ? "text-red-500" : "text-stone-200"}`}
+                          >
+                            {simulatedResult.hp > 0
+                              ? `+${simulatedResult.hp}`
+                              : simulatedResult.hp}
                           </div>
                         </div>
 
-                        <div className="bg-amber-955/20 border border-amber-900/30 p-3 rounded-xl text-center flex flex-col items-center justify-center">
-                          <StateIcon type="hunger" className="w-6 h-6 object-contain mb-1" />
-                          <div className="text-[10px] text-stone-400 leading-none">+飢餓值</div>
-                          <div className={`text-sm font-bold font-mono mt-1 ${simulatedResult.hunger >= 75 ? "text-amber-400" : "text-stone-200"}`}>
+                        <div className="bg-amber-950/20 border border-amber-900/30 p-3 rounded-xl text-center flex flex-col items-center justify-center">
+                          <StateIcon
+                            type="hunger"
+                            className="w-6 h-6 object-contain mb-1"
+                          />
+                          <div className="text-[10px] text-stone-400 leading-none">
+                            +飢餓值
+                          </div>
+                          <div
+                            className={`text-sm font-bold font-mono mt-1 ${simulatedResult.hunger >= 75 ? "text-amber-400" : "text-stone-200"}`}
+                          >
                             +{simulatedResult.hunger}
                           </div>
                         </div>
 
                         <div className="bg-sky-950/20 border border-sky-900/30 p-3 rounded-xl text-center flex flex-col items-center justify-center">
-                          <StateIcon type="sanity" className="w-6 h-6 object-contain mb-1" />
-                          <div className="text-[10px] text-stone-400 leading-none">+san值</div>
-                          <div className={`text-sm font-bold font-mono mt-1 ${simulatedResult.sanity >= 20 ? "text-sky-300" : simulatedResult.sanity < 0 ? "text-purple-400" : "text-stone-200"}`}>
-                            {simulatedResult.sanity > 0 ? `+${simulatedResult.sanity}` : simulatedResult.sanity}
+                          <StateIcon
+                            type="sanity"
+                            className="w-6 h-6 object-contain mb-1"
+                          />
+                          <div className="text-[10px] text-stone-400 leading-none">
+                            +san值
+                          </div>
+                          <div
+                            className={`text-sm font-bold font-mono mt-1 ${simulatedResult.sanity >= 20 ? "text-sky-300" : simulatedResult.sanity < 0 ? "text-purple-400" : "text-stone-200"}`}
+                          >
+                            {simulatedResult.sanity > 0
+                              ? `+${simulatedResult.sanity}`
+                              : simulatedResult.sanity}
                           </div>
                         </div>
                       </div>
@@ -1318,15 +1858,25 @@ export default function App() {
                       {/* Additional Cooking Info */}
                       <div className="space-y-2 lg:space-y-3 bg-stone-950 p-4 rounded-xl border border-stone-850 text-xs">
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-stone-400">⏱️ 烘乾/烹飪時間</span>
-                          <span className="font-mono text-stone-200 font-bold">{simulatedResult.cookTime} 秒</span>
+                          <span className="text-stone-400">
+                            ⏱️ 烘乾/烹飪時間
+                          </span>
+                          <span className="font-mono text-stone-200 font-bold">
+                            {simulatedResult.cookTime} 秒
+                          </span>
                         </div>
                         <div className="flex justify-between items-center py-1 border-t border-stone-855">
-                          <span className="text-stone-400">🍂 食物腐爛天數</span>
-                          <span className="font-mono text-stone-200 font-bold">{simulatedResult.perishDays} 天</span>
+                          <span className="text-stone-400">
+                            🍂 食物腐爛天數
+                          </span>
+                          <span className="font-mono text-stone-200 font-bold">
+                            {simulatedResult.perishDays} 天
+                          </span>
                         </div>
                         <div className="py-1.5 border-t border-stone-855">
-                          <div className="text-stone-400 mb-1">📋 符合此配方的原理：</div>
+                          <div className="text-stone-400 mb-1">
+                            📋 符合此配方的原理：
+                          </div>
                           <p className="text-[11px] text-amber-500 font-mono leading-relaxed bg-stone-900 p-2 rounded border border-stone-800">
                             {simulatedResult.requirementsZH}
                           </p>
@@ -1336,40 +1886,80 @@ export default function App() {
                   ) : (
                     <div className="bg-stone-900 border border-stone-850 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[220px]">
                       <HelpCircle className="h-8 w-8 text-stone-500 mb-2" />
-                      <h4 className="text-stone-300 font-semibold text-sm">砂鍋尚未開爐</h4>
+                      <h4 className="text-stone-300 font-semibold text-sm">
+                        砂鍋尚未開爐
+                      </h4>
                       <p className="text-xs text-stone-400 max-w-xs mx-auto mt-1">
-                        在下方食材庫中，點擊<strong>「 放入 」</strong>按鈕將食材放入4個砂鍋格中，然後點擊「開火烹飪！」模擬化學反應。
+                        在下方食材庫中，點擊<strong>「 放入 」</strong>
+                        按鈕將食材放入4個砂鍋格中，然後點擊「開火烹飪！」模擬化學反應。
                       </p>
 
                       <div className="mt-4 pt-4 border-t border-stone-800 w-full">
-                        <p className="text-[11px] text-stone-400">💡 經典食譜快速入口 preset：</p>
+                        <p className="text-[11px] text-stone-400">
+                          💡 經典食譜快速入口 preset：
+                        </p>
                         <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
                           <button
-                            onClick={() => loadPresetIntoPot(["monstermeat", "berries", "berries", "berries"])}
+                            onClick={() =>
+                              loadPresetIntoPot([
+                                "monstermeat",
+                                "berries",
+                                "berries",
+                                "berries",
+                              ])
+                            }
                             className="bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
                           >
                             肉丸 🧆
                           </button>
                           <button
-                            onClick={() => loadPresetIntoPot(["monstermeat", "bird_egg", "carrot", "berries"])}
+                            onClick={() =>
+                              loadPresetIntoPot([
+                                "monstermeat",
+                                "bird_egg",
+                                "carrot",
+                                "berries",
+                              ])
+                            }
                             className="bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
                           >
                             餃子 🥟
                           </button>
                           <button
-                            onClick={() => loadPresetIntoPot(["meat", "meat", "smallmeat", "smallmeat"])}
+                            onClick={() =>
+                              loadPresetIntoPot([
+                                "meat",
+                                "meat",
+                                "smallmeat",
+                                "smallmeat",
+                              ])
+                            }
                             className="bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
                           >
                             肉湯 🥣
                           </button>
                           <button
-                            onClick={() => loadPresetIntoPot(["dragonfruit", "twigs", "twigs", "twigs"])}
+                            onClick={() =>
+                              loadPresetIntoPot([
+                                "dragonfruit",
+                                "twigs",
+                                "twigs",
+                                "twigs",
+                              ])
+                            }
                             className="bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
                           >
                             火龍果派 🥮
                           </button>
                           <button
-                            onClick={() => loadPresetIntoPot(["goatmilk", "ice", "honey", "honey"])}
+                            onClick={() =>
+                              loadPresetIntoPot([
+                                "goatmilk",
+                                "ice",
+                                "honey",
+                                "honey",
+                              ])
+                            }
                             className="bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
                           >
                             冰淇淋 🍧
@@ -1390,10 +1980,17 @@ export default function App() {
                   <div className="max-h-[500px] overflow-y-auto space-y-2 pr-1">
                     {groupedIngredients.map(([catKey, categoryData]) => {
                       const isExpanded = !!expandedCatSim[catKey];
-                      const activeCountOfCat = categoryData.list.reduce((acc, ing) => acc + potSlots.filter(id => id === ing.id).length, 0);
+                      const activeCountOfCat = categoryData.list.reduce(
+                        (acc, ing) =>
+                          acc + potSlots.filter((id) => id === ing.id).length,
+                        0,
+                      );
 
                       return (
-                        <div key={catKey} className={`border rounded-xl overflow-hidden transition-all duration-200 border-stone-800 bg-stone-950/20`}>
+                        <div
+                          key={catKey}
+                          className={`border rounded-xl overflow-hidden transition-all duration-200 border-stone-800 bg-stone-950/20`}
+                        >
                           {/* Category Button Header */}
                           <button
                             onClick={() => toggleCatSim(catKey)}
@@ -1407,7 +2004,9 @@ export default function App() {
                                 </span>
                               )}
                             </h5>
-                            <ChevronRight className={`h-4 w-4 transition-transform duration-200 text-stone-500 ${isExpanded ? "rotate-90 text-amber-500" : ""}`} />
+                            <ChevronRight
+                              className={`h-4 w-4 transition-transform duration-200 text-stone-500 ${isExpanded ? "rotate-90 text-amber-500" : ""}`}
+                            />
                           </button>
 
                           {/* Collapsible Panel */}
@@ -1422,31 +2021,44 @@ export default function App() {
                               >
                                 <div className="p-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-stone-950/30">
                                   {categoryData.list.map((ing) => {
-                                    const activeCountInPot = potSlots.filter(id => id === ing.id).length;
-                                    const isPotFull = potSlots.indexOf("") === -1;
+                                    const activeCountInPot = potSlots.filter(
+                                      (id) => id === ing.id,
+                                    ).length;
+                                    const isPotFull =
+                                      potSlots.indexOf("") === -1;
                                     return (
                                       <button
                                         key={ing.id}
                                         disabled={isCooking || isPotFull}
-                                        onClick={() => handleAddIngredientToPot(ing.id)}
+                                        onClick={() =>
+                                          handleAddIngredientToPot(ing.id)
+                                        }
                                         className={`flex items-center justify-between p-1.5 rounded-lg text-xs border transition cursor-pointer ${
                                           isPotFull
-                                            ? "bg-stone-955 text-stone-600 border-transparent cursor-not-allowed"
+                                            ? "bg-stone-950 text-stone-600 border-transparent cursor-not-allowed"
                                             : "bg-stone-950 text-stone-300 border-stone-800 hover:border-amber-900/40 hover:bg-stone-800"
                                         }`}
                                       >
                                         <span className="flex items-center gap-1 text-left truncate flex-1 min-w-0">
-                                           <IngredientImage ingredientId={ing.id} avatarText={ing.avatarText} className="w-5 h-5 object-contain shrink-0" />
-                                          <span className="truncate">{ing.name}</span>
+                                          <IngredientImage
+                                            ingredientId={ing.id}
+                                            avatarText={ing.avatarText}
+                                            className="w-5 h-5 object-contain shrink-0"
+                                          />
+                                          <span className="truncate">
+                                            {ing.name}
+                                          </span>
                                         </span>
-                                        
+
                                         <span className="flex items-center gap-1 shrink-0 ml-1">
                                           {activeCountInPot > 0 && (
                                             <span className="bg-amber-600 text-stone-950 text-[9px] px-1 font-bold rounded">
                                               x{activeCountInPot}
                                             </span>
                                           )}
-                                          <span className="text-[9px] text-amber-500 font-bold shrink-0">＋</span>
+                                          <span className="text-[9px] text-amber-500 font-bold shrink-0">
+                                            ＋
+                                          </span>
                                         </span>
                                       </button>
                                     );
@@ -1460,7 +2072,6 @@ export default function App() {
                     })}
                   </div>
                 </div>
-
               </div>
             </motion.div>
           )}
@@ -1481,7 +2092,7 @@ export default function App() {
                   <h3 className="text-md font-serif font-bold text-amber-500 mb-4 pb-2 border-b border-stone-800">
                     人物百科角色目錄
                   </h3>
-                  
+
                   <div className="space-y-3">
                     {/* WX-78 */}
                     <button
@@ -1505,7 +2116,9 @@ export default function App() {
                       <div className="min-w-0 font-serif">
                         <h4 className="font-bold text-sm text-white flex items-center gap-1.5">
                           <span>WX-78</span>
-                          <span className="text-[10px] bg-amber-600/20 text-amber-400 px-1 rounded">🤖</span>
+                          <span className="text-[10px] bg-amber-600/20 text-amber-400 px-1 rounded">
+                            🤖
+                          </span>
                         </h4>
                         <p className="text-xs text-stone-400 truncate mt-0.5">
                           殘酷的機器人
@@ -1521,13 +2134,15 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
                           <span>威爾森</span>
-                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">
+                            鎖定
+                          </span>
                         </h4>
                         <p className="text-xs text-stone-500 truncate mt-0.5">
                           紳士科學家
                         </p>
                       </div>
-                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                      <div className="absolute inset-0 bg-stone-950/20 rounded-xl flex items-center justify-center">
                         <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
                           敬請期待
                         </span>
@@ -1542,13 +2157,15 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
                           <span>薇洛</span>
-                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">
+                            鎖定
+                          </span>
                         </h4>
                         <p className="text-xs text-stone-500 truncate mt-0.5">
                           縱火者
                         </p>
                       </div>
-                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                      <div className="absolute inset-0 bg-stone-950/20 rounded-xl flex items-center justify-center">
                         <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
                           敬請期待
                         </span>
@@ -1563,13 +2180,15 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
                           <span>溫蒂</span>
-                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">
+                            鎖定
+                          </span>
                         </h4>
                         <p className="text-xs text-stone-500 truncate mt-0.5">
                           喪親孤女
                         </p>
                       </div>
-                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                      <div className="absolute inset-0 bg-stone-950/20 rounded-xl flex items-center justify-center">
                         <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
                           敬請期待
                         </span>
@@ -1584,13 +2203,15 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
                           <span>沃爾夫岡</span>
-                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">
+                            鎖定
+                          </span>
                         </h4>
                         <p className="text-xs text-stone-500 truncate mt-0.5">
                           大力士
                         </p>
                       </div>
-                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                      <div className="absolute inset-0 bg-stone-950/20 rounded-xl flex items-center justify-center">
                         <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
                           敬請期待
                         </span>
@@ -1605,7 +2226,10 @@ export default function App() {
                 {/* Main Profile Info */}
                 <div className="bg-stone-900 border border-stone-850 rounded-2xl p-6 relative overflow-hidden">
                   {/* Decorative background glow if slots full */}
-                  {totalSlotsUsed === 6 && (
+                  {totalSlotsUsed.alpha +
+                    totalSlotsUsed.beta +
+                    totalSlotsUsed.gamma ===
+                    18 && (
                     <div className="absolute inset-0 bg-radial from-amber-600/5 via-transparent to-transparent pointer-events-none animate-pulse" />
                   )}
 
@@ -1626,7 +2250,10 @@ export default function App() {
                         <span className="text-xs text-stone-400 bg-stone-950 px-2.5 py-1 rounded-md border border-stone-800 font-serif">
                           {currentCharacter.englishName}
                         </span>
-                        {totalSlotsUsed === 6 && (
+                        {totalSlotsUsed.alpha +
+                          totalSlotsUsed.beta +
+                          totalSlotsUsed.gamma ===
+                          18 && (
                           <span className="text-xs font-bold bg-amber-600 text-stone-950 px-2 py-0.5 rounded animate-bounce">
                             ⚡ 系統已滿載 (Fully Overloaded)
                           </span>
@@ -1643,324 +2270,904 @@ export default function App() {
 
                   <hr className="border-stone-850 my-6" />
 
-                  {/* Character Properties & Interactive Config */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
-                    {/* Left Sub-Column: Stats & Perks */}
-                    <div className="md:col-span-6 flex flex-col gap-6">
-                      <div>
-                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
-                          <Layers className="h-4 w-4" />
-                          動態屬性值 (Real-time Stats)
-                        </h3>
+                  {/* Top Block: Real-time Stats & Favorite Food */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10 mb-6 font-sans">
+                    {/* Dynamic Stats */}
+                    <div className="md:col-span-8 bg-stone-950/20 border border-stone-850 rounded-xl p-4">
+                      <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
+                        <Layers className="h-4 w-4" />
+                        動態屬性值 (Real-time Stats)
+                      </h3>
 
-                        <div className="space-y-4">
-                          {/* Health Bar */}
-                          <div>
-                            <div className="flex items-center justify-between text-xs mb-1.5">
-                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
-                                <StateIcon type="hp" className="w-4.5 h-4.5 object-contain" />
-                                生命值 (Health)
-                              </span>
-                              <span className="font-mono text-stone-400 font-bold">
-                                <span className="text-red-400">{calculatedStats.health}</span>
-                                <span className="text-stone-600"> / 270</span>
-                                <span className="text-[10px] text-stone-500 ml-1">
-                                  (150 + {calculatedStats.health - 150})
-                                </span>
-                              </span>
-                            </div>
-                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
-                              <div
-                                className="h-full bg-gradient-to-r from-red-800 to-red-600 rounded-full transition-all duration-300 shadow-inner"
-                                style={{ width: `${(calculatedStats.health / 270) * 100}%` }}
+                      <div className="space-y-4">
+                        {/* Health Bar */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                              <StateIcon
+                                type="hp"
+                                className="w-4.5 h-4.5 object-contain"
                               />
-                            </div>
+                              生命值 (Health)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              <span className="text-red-400">
+                                {calculatedStats.health}
+                              </span>
+                              <span className="text-stone-600"> / 400</span>
+                              <span className="text-[10px] text-stone-500 ml-1">
+                                (100 + {calculatedStats.health - 100})
+                              </span>
+                            </span>
                           </div>
-
-                          {/* Hunger Bar */}
-                          <div>
-                            <div className="flex items-center justify-between text-xs mb-1.5">
-                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
-                                <StateIcon type="hunger" className="w-4.5 h-4.5 object-contain" />
-                                飢餓值 (Hunger)
-                              </span>
-                              <span className="font-mono text-stone-400 font-bold">
-                                <span className="text-amber-500">{calculatedStats.hunger}</span>
-                                <span className="text-stone-600"> / 270</span>
-                                <span className="text-[10px] text-stone-500 ml-1">
-                                  (150 + {calculatedStats.hunger - 150})
-                                </span>
-                              </span>
-                            </div>
-                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
-                              <div
-                                className="h-full bg-gradient-to-r from-amber-700 to-amber-550 rounded-full transition-all duration-300 shadow-inner"
-                                style={{ width: `${(calculatedStats.hunger / 270) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Sanity Bar */}
-                          <div>
-                            <div className="flex items-center justify-between text-xs mb-1.5">
-                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
-                                <StateIcon type="sanity" className="w-4.5 h-4.5 object-contain" />
-                                理智值 (Sanity)
-                              </span>
-                              <span className="font-mono text-stone-400 font-bold">
-                                <span className="text-cyan-400">{calculatedStats.sanity}</span>
-                                <span className="text-stone-600"> / 270</span>
-                                <span className="text-[10px] text-stone-500 ml-1">
-                                  (150 + {calculatedStats.sanity - 150})
-                                </span>
-                              </span>
-                            </div>
-                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
-                              <div
-                                className="h-full bg-gradient-to-r from-cyan-700 to-cyan-550 rounded-full transition-all duration-300 shadow-inner"
-                                style={{ width: `${(calculatedStats.sanity / 270) * 100}%` }}
-                              />
-                            </div>
+                          <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                            <div
+                              className="h-full bg-gradient-to-r from-red-800 to-red-600 rounded-full transition-all duration-300 shadow-inner"
+                              style={{
+                                width: `${(calculatedStats.health / 400) * 100}%`,
+                              }}
+                            />
                           </div>
                         </div>
 
-                        {/* Extra Status Buffs */}
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
-                            calculatedStats.speedBonus > 0 
-                              ? "bg-amber-950/60 text-amber-300 border-amber-500/30 font-medium" 
-                              : "bg-stone-950/20 text-stone-650 border-stone-850"
-                          }`}>
+                        {/* Hunger Bar */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                              <StateIcon
+                                type="hunger"
+                                className="w-4.5 h-4.5 object-contain"
+                              />
+                              飢餓值 (Hunger)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              <span className="text-amber-500">
+                                {calculatedStats.hunger}
+                              </span>
+                              <span className="text-stone-600"> / 400</span>
+                              <span className="text-[10px] text-stone-500 ml-1">
+                                (100 + {calculatedStats.hunger - 100})
+                              </span>
+                            </span>
+                          </div>
+                          <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-700 to-amber-550 rounded-full transition-all duration-300 shadow-inner"
+                              style={{
+                                width: `${(calculatedStats.hunger / 400) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Sanity Bar */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                              <StateIcon
+                                type="sanity"
+                                className="w-4.5 h-4.5 object-contain"
+                              />
+                              理智值 (Sanity)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              <span className="text-cyan-400">
+                                {calculatedStats.sanity}
+                              </span>
+                              <span className="text-stone-600"> / 400</span>
+                              <span className="text-[10px] text-stone-500 ml-1">
+                                (100 + {calculatedStats.sanity - 100})
+                              </span>
+                            </span>
+                          </div>
+                          <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-700 to-cyan-550 rounded-full transition-all duration-300 shadow-inner"
+                              style={{
+                                width: `${(calculatedStats.sanity / 400) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Extra Status Buffs */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {/* Speed */}
+                        {calculatedStats.speedBonus > 0 && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-amber-900/60 text-amber-300 border-amber-500/30 font-medium flex items-center gap-1 animate-dst-glow">
                             <Zap className="h-3 w-3 shrink-0" />
                             移動速度: +{calculatedStats.speedBonus}%
                           </span>
-                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
-                            calculatedStats.light 
-                              ? "bg-yellow-955/40 text-yellow-300 border-yellow-500/30 font-medium" 
-                              : "bg-stone-950/20 text-stone-655 border-stone-850"
-                          }`}>
+                        )}
+                        {/* Light */}
+                        {calculatedStats.light && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-yellow-950/40 text-yellow-300 border-yellow-500/30 font-medium flex items-center gap-1 animate-dst-glow">
                             <Lightbulb className="h-3 w-3 shrink-0" />
-                            隨身光源: {calculatedStats.light ? "已啟用" : "未啟用"}
+                            隨身光源: 已啟用
                           </span>
-                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
-                            calculatedStats.thermal 
-                              ? "bg-orange-950/60 text-orange-300 border-orange-500/30 font-medium" 
-                              : "bg-stone-950/20 text-stone-650 border-stone-850"
-                          }`}>
+                        )}
+                        {/* Warmth */}
+                        {calculatedStats.thermal && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-orange-950/60 text-orange-300 border-orange-500/30 font-medium flex items-center gap-1 animate-dst-glow">
                             <Flame className="h-3 w-3 shrink-0" />
-                            免疫凍傷: {calculatedStats.thermal ? "已啟用" : "未啟用"}
+                            體溫調溫: 熱源 (防寒)
                           </span>
-                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
-                            calculatedStats.refrigerant 
-                              ? "bg-sky-950/60 text-sky-300 border-sky-500/30 font-medium" 
-                              : "bg-stone-950/20 text-stone-650 border-stone-850"
-                          }`}>
+                        )}
+                        {/* Cool */}
+                        {calculatedStats.refrigerant && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-sky-950/60 text-sky-300 border-sky-500/30 font-medium flex items-center gap-1 animate-dst-glow">
                             <Sparkles className="h-3 w-3 shrink-0" />
-                            免疫中暑: {calculatedStats.refrigerant ? "已啟用" : "未啟用"}
+                            體溫調溫: 冷源 (散熱)
                           </span>
-                        </div>
+                        )}
+                        {/* Sanity Regen */}
+                        {calculatedStats.sanityRegen > 0 && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-cyan-950/40 text-cyan-300 border-cyan-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Eye className="h-3 w-3 shrink-0" />
+                            理智回復: +{calculatedStats.sanityRegen}/分
+                          </span>
+                        )}
+                        {/* Health Regen */}
+                        {calculatedStats.healthRegen > 0 && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-rose-950/40 text-rose-300 border-rose-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Heart className="h-3 w-3 shrink-0" />
+                            生命回復: +{calculatedStats.healthRegen}/分
+                          </span>
+                        )}
+                        {/* Hunger rate reduction */}
+                        {calculatedStats.hungerRateText !== "" && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-emerald-950/40 text-emerald-300 border-emerald-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Soup className="h-3 w-3 shrink-0" />
+                            飢餓減緩: {calculatedStats.hungerRateText}
+                          </span>
+                        )}
+                        {/* Damage Reduction */}
+                        {calculatedStats.physicalReduction !== "" && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-rose-950/40 text-rose-300 border-rose-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Layers className="h-3 w-3 shrink-0" />
+                            物理減免: {calculatedStats.physicalReduction}
+                          </span>
+                        )}
+                        {/* Electric retaliate */}
+                        {calculatedStats.hasElectric && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-amber-900/40 text-yellow-400 border-amber-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Zap className="h-3 w-3 shrink-0 text-yellow-400" />
+                            電氣化: 20點帶電反傷
+                          </span>
+                        )}
+                        {/* Pocket expansion */}
+                        {calculatedStats.pocketCount > 0 && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-stone-900 border-stone-700 text-stone-300 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Compass className="h-3 w-3 shrink-0" />
+                            空間擴展: {calculatedStats.pocketCount}個擴展物品欄
+                          </span>
+                        )}
+                        {/* Redigest */}
+                        {calculatedStats.hasDigest && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-emerald-950/20 text-emerald-300 border-emerald-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Soup className="h-3 w-3 shrink-0" />
+                            再消化: 可食變質物產營養磚
+                          </span>
+                        )}
+                        {/* Chess count */}
+                        {calculatedStats.chessBonus > 0 && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-indigo-950/40 text-indigo-300 border-indigo-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <UserCheck className="h-3 w-3 shrink-0" />
+                            棋聖: 發條上限 +{calculatedStats.chessBonus}
+                          </span>
+                        )}
+                        {/* Parrying block */}
+                        {calculatedStats.hasBlock && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-stone-950 text-stone-200 border-stone-605 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Layers className="h-3 w-3 shrink-0" />
+                            格擋: 80%防禦並持續嘲諷
+                          </span>
+                        )}
+                        {/* Sonic fear */}
+                        {calculatedStats.hasSonic && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-rose-950/40 text-rose-355 border-rose-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <Sparkles className="h-3 w-3 shrink-0" />
+                            聲波激發: 驚醒/恐懼周圍生物
+                          </span>
+                        )}
+                        {/* Spin harvesting */}
+                        {calculatedStats.hasSpin && (
+                          <span className="text-[11px] px-2 py-1 rounded-md border bg-amber-900/40 text-amber-200 border-amber-500/30 font-medium flex items-center gap-1 animate-dst-glow">
+                            <RotateCcw className="h-3 w-3 shrink-0 animate-spin" />
+                            旋轉週期: 工作/攻擊旋轉收割
+                          </span>
+                        )}
+                        {/* Empty placeholder */}
+                        {calculatedStats.speedBonus === 0 &&
+                          !calculatedStats.light &&
+                          !calculatedStats.thermal &&
+                          !calculatedStats.refrigerant &&
+                          calculatedStats.sanityRegen === 0 &&
+                          calculatedStats.healthRegen === 0 &&
+                          calculatedStats.hungerRateText === "" &&
+                          calculatedStats.physicalReduction === "" &&
+                          !calculatedStats.hasElectric &&
+                          calculatedStats.pocketCount === 0 &&
+                          !calculatedStats.hasDigest &&
+                          calculatedStats.chessBonus === 0 &&
+                          !calculatedStats.hasBlock &&
+                          !calculatedStats.hasSonic &&
+                          !calculatedStats.hasSpin && (
+                            <span className="text-[11px] px-2 py-1 rounded-md border bg-stone-950/20 text-stone-500 border-stone-850">
+                              無特殊加成狀態 (無晶片裝載)
+                            </span>
+                          )}
                       </div>
+                    </div>
 
-                      {/* Perks */}
+                    {/* Favorite Food */}
+                    <div className="md:col-span-4 bg-stone-950/40 border border-stone-800 rounded-xl p-4 flex flex-col justify-between">
                       <div>
-                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-3 pb-1 border-b border-stone-850">
-                          人物特性 (Perks)
-                        </h3>
-                        <div className="space-y-3">
-                          {currentCharacter.perks.map((perk, i) => (
-                            <div key={i} className="bg-stone-950/30 border border-stone-850/80 rounded-xl p-3">
-                              <h4 className="text-xs font-bold text-stone-200 mb-1 font-serif">
-                                {perk.title}
-                              </h4>
-                              <p className="text-[11px] text-stone-400 leading-relaxed">
-                                {perk.desc}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Favorite Food Widget */}
-                      <div className="bg-stone-955/40 border border-stone-800 rounded-xl p-4">
                         <h4 className="text-xs font-serif font-bold text-amber-500 mb-2 flex items-center gap-1.5">
                           <Soup className="h-4 w-4 text-amber-500" />
                           最愛料理 (Favorite Food)
                         </h4>
-                        <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
+                        <p className="text-[11px] text-stone-400 leading-relaxed mb-4">
                           {currentCharacter.favoriteFoodBonus}
                         </p>
-                        <button
-                          onClick={handleFavoriteFoodClick}
-                          className="w-full py-2 px-3 bg-stone-850 hover:bg-stone-800 border border-stone-700 hover:border-amber-500/50 rounded-lg text-[11px] font-semibold text-amber-500 hover:text-amber-400 transition flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <span>在食譜庫中檢索「蝴蝶松餅」</span>
-                          <ChevronRight className="h-3 w-3" />
-                        </button>
                       </div>
+                      <button
+                        onClick={handleFavoriteFoodClick}
+                        className="w-full py-2 px-3 bg-stone-850 hover:bg-stone-800 border border-stone-700 hover:border-amber-500/50 rounded-lg text-[11px] font-semibold text-amber-500 hover:text-amber-400 transition flex items-center justify-center gap-2 cursor-pointer mt-auto"
+                      >
+                        <span>在食譜庫中檢索「蝴蝶松餅」</span>
+                        <ChevronRight className="h-3 w-3" />
+                      </button>
                     </div>
+                  </div>
 
-                    {/* Right Sub-Column: Circuit Upgrades */}
-                    <div className="md:col-span-6 flex flex-col gap-6">
-                      <div>
-                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
-                          <Cpu className="h-4 w-4" />
-                          電路板升級插槽 ({totalSlotsUsed} / 6 Slots Used)
-                        </h3>
+                  <hr className="border-stone-850 my-6" />
 
-                        {/* Interactive Slot Allocation Visual Row */}
-                        <div className="grid grid-cols-6 gap-2 mb-4">
-                          {slotsAllocation.map((slot, index) => {
-                            if (slot.empty) {
+                  {/* Middle Block: Circuit Upgrade System */}
+                  <div className="relative z-10 mb-6 font-sans">
+                    <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
+                      <Cpu className="h-4 w-4" />
+                      電路板升級系統 (Circuit Upgrade System)
+                    </h3>
+
+                    {/* Equipped Circuits List / Log */}
+                    <div className="bg-stone-950 border border-stone-850 rounded-xl p-3 min-h-[80px] flex flex-col justify-center mb-6">
+                      {wxCircuits.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-xs text-stone-500">
+                            尚未安裝任何電路板
+                          </p>
+                          <p className="text-[10px] text-stone-600 mt-1">
+                            點擊下方各分類清單中的「＋安裝」來裝載屬性
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
+                            <span>已裝載晶片 ({wxCircuits.length})</span>
+                            <button
+                              onClick={() => setWxCircuits([])}
+                              className="text-red-500 hover:text-red-400 hover:underline cursor-pointer font-bold lowercase text-[10px]"
+                            >
+                              清空全部
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {wxCircuits.map((cId, idx) => {
+                              const circ = currentCharacter.circuits?.find(
+                                (c) => c.id === cId,
+                              );
+                              if (!circ) return null;
                               return (
                                 <div
-                                  key={`empty-${index}`}
-                                  className="aspect-square rounded-xl border border-dashed border-stone-800 bg-stone-950/60 flex items-center justify-center text-[10px] text-stone-700 font-mono select-none"
-                                  title={`插槽 ${index + 1} (空)`}
+                                  key={`${cId}-${idx}`}
+                                  className="inline-flex items-center gap-1.5 bg-stone-900 border border-stone-800 rounded px-2 py-0.5 text-xs text-stone-300 animate-dst-glow"
                                 >
-                                  {index + 1}
+                                  <CircuitImage circuitId={cId} className="w-4 h-4 object-contain shrink-0" />
+                                  <span>{circ.name}</span>
+                                  <span className="text-[9px] text-stone-500 font-mono">
+                                    ({circ.slots}P)
+                                  </span>
+                                  <button
+                                    onClick={() => handleUninstallCircuit(idx)}
+                                    className="text-red-500 hover:text-red-400 font-bold ml-1 px-0.5 cursor-pointer text-[10px]"
+                                    title="解除裝載"
+                                  >
+                                    ×
+                                  </button>
                                 </div>
                               );
-                            } else {
-                              return (
-                                <button
-                                  key={`filled-${index}`}
-                                  onClick={() => handleUninstallCircuit(slot.originalIndex)}
-                                  className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all cursor-pointer hover:brightness-125 hover:scale-105 active:scale-95 ${slot.color}`}
-                                  title={`${slot.name} (佔用插槽 ${index + 1}/6) - 點擊解除安裝`}
-                                >
-                                  <span className="text-[8px] font-bold text-center leading-none mt-1 truncate w-full">
-                                    {slot.name.replace("電路板", "")}
-                                  </span>
-                                  <span className="text-[8px] font-mono opacity-60">
-                                    {slot.indexInCircuit + 1}/{slot.slots}
-                                  </span>
-                                </button>
-                              );
-                            }
-                          })}
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3 Columns in parallel */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Alpha Slots & Available Boards */}
+                      <div className="bg-stone-950/20 border border-stone-850/50 rounded-xl p-4 flex flex-col gap-4">
+                        {/* Alpha Slot Visualizer */}
+                        <div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span className="text-rose-400 font-bold font-serif flex items-center gap-1">
+                              🟥 阿爾法插槽 (Alpha Slots)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              {totalSlotsUsed.alpha} / 6
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {slotsAllocation.alpha.map((slot, index) => {
+                              if (slot.empty) {
+                                return (
+                                  <div
+                                    key={`empty-alpha-${index}`}
+                                    className="aspect-square rounded-xl border border-dashed border-rose-900/20 bg-stone-950/60 flex items-center justify-center text-[10px] text-stone-700 font-mono select-none"
+                                    title={`阿爾法插槽 ${index + 1} (空)`}
+                                  >
+                                    α-{index + 1}
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <button
+                                    key={`filled-alpha-${index}`}
+                                    onClick={() =>
+                                      handleUninstallCircuit(slot.originalIndex)
+                                    }
+                                    className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer hover:brightness-125 hover:scale-105 active:scale-95 ${slot.color}`}
+                                    title={`${slot.name} (佔用插槽 ${index + 1}/6) - 點擊解除安裝`}
+                                  >
+                                    <CircuitImage circuitId={slot.circuitId} className="w-7 h-7 object-contain" />
+                                    <span className="text-[8px] font-mono font-bold leading-none opacity-80">
+                                      {slot.indexInCircuit + 1}/{slot.slots}
+                                    </span>
+                                  </button>
+                                );
+                              }
+                            })}
+                          </div>
                         </div>
 
-                        {/* Currently Equipped Circuit List / Log */}
-                        <div className="bg-stone-950 border border-stone-850 rounded-xl p-3 min-h-[90px] flex flex-col justify-center">
-                          {wxCircuits.length === 0 ? (
-                            <div className="text-center py-4">
-                              <p className="text-xs text-stone-500">尚未安裝任何電路板</p>
-                              <p className="text-[10px] text-stone-600 mt-1">點擊下方清單裝載電路板升級屬性</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              <div className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
-                                <span>已裝載晶片 ({wxCircuits.length})</span>
-                                <button
-                                  onClick={() => setWxCircuits([])}
-                                  className="text-red-500 hover:text-red-400 hover:underline cursor-pointer font-bold lowercase"
-                                >
-                                  清空全部
-                                </button>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {wxCircuits.map((cId, idx) => {
-                                  const circ = currentCharacter.circuits?.find(c => c.id === cId);
-                                  if (!circ) return null;
-                                  return (
+                        {/* Alpha Available Circuits List */}
+                        <div className="border-t border-stone-850/60 pt-4 flex-1 flex flex-col">
+                          <div className="text-xs font-bold text-rose-400 bg-rose-950/20 px-2.5 py-1.5 rounded-lg border border-rose-900/30 mb-2.5 flex items-center justify-between font-serif">
+                            <span>阿爾法電路 (物理與三維)</span>
+                            <span className="text-[10px] text-rose-500 font-mono">
+                              α - Alpha
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                            {currentCharacter.circuits
+                              ?.filter((c) => c.type === "alpha")
+                              .map((circuit) => {
+                                const currentCount = wxCircuits.filter(
+                                  (id) => id === circuit.id,
+                                ).length;
+                                const isLimitReached =
+                                  currentCount >= circuit.maxCount;
+                                const isSlotsExceeded =
+                                  totalSlotsUsed.alpha + circuit.slots > 6;
+                                const canEquip =
+                                  !isLimitReached && !isSlotsExceeded;
+
+                                let colorTheme =
+                                  "border-stone-850 bg-stone-950/20";
+                                if (currentCount > 0) {
+                                  colorTheme =
+                                    "border-rose-500/20 bg-rose-950/5";
+                                }
+
+                                const isExpanded =
+                                  !!expandedCircuitIds[circuit.id];
+
+                                return (
+                                  <div
+                                    key={circuit.id}
+                                    className={`w-full rounded-xl border transition-all overflow-hidden flex flex-col ${colorTheme}`}
+                                  >
+                                    {/* Header Toggle Row */}
                                     <div
-                                      key={`${cId}-${idx}`}
-                                      className="inline-flex items-center gap-1 bg-stone-900 border border-stone-800 rounded px-2 py-0.5 text-xs text-stone-300 animate-dst-glow"
+                                      onClick={() =>
+                                        toggleCircuitExpand(circuit.id)
+                                      }
+                                      className="w-full flex items-center justify-between p-2 hover:bg-stone-900/40 transition cursor-pointer select-none"
                                     >
-                                      <span>{circ.name}</span>
-                                      <span className="text-[9px] text-stone-500 font-mono">({circ.slots}P)</span>
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <ChevronRight
+                                          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-stone-500 ${
+                                            isExpanded
+                                              ? "rotate-90 text-rose-400"
+                                              : ""
+                                          }`}
+                                        />
+                                        <CircuitImage circuitId={circuit.id} className="w-6 h-6 object-contain shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="font-bold text-xs text-white truncate">
+                                            {circuit.name}
+                                          </h4>
+                                          <div className="flex items-center gap-1 mt-0.5 text-[9px] font-mono text-stone-400">
+                                            <span className="bg-stone-900 px-1 rounded text-stone-300">
+                                              {circuit.slots}P
+                                            </span>
+                                            {currentCount > 0 && (
+                                              <span className="bg-rose-950/40 text-rose-400 font-bold px-1 rounded">
+                                                已裝 {currentCount}/
+                                                {circuit.maxCount}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Install Button (Alpha) */}
                                       <button
-                                        onClick={() => handleUninstallCircuit(idx)}
-                                        className="text-red-500 hover:text-red-400 font-bold ml-1 px-0.5 cursor-pointer text-[10px]"
-                                        title="解除裝載"
+                                        disabled={!canEquip}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleInstallCircuit(circuit);
+                                        }}
+                                        className={`shrink-0 text-[9px] px-2 py-1 rounded transition font-bold font-serif shadow-sm ml-2 ${
+                                          isLimitReached
+                                            ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                            : isSlotsExceeded
+                                              ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                              : "text-rose-400 border border-rose-500/30 bg-rose-500/5 hover:bg-rose-600 hover:text-stone-950 cursor-pointer"
+                                        }`}
                                       >
-                                        ×
+                                        {isLimitReached
+                                          ? "已達上限"
+                                          : isSlotsExceeded
+                                            ? "插槽不足"
+                                            : "＋ 安裝"}
                                       </button>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
+
+                                    {/* Collapsible Details (Alpha) */}
+                                    <AnimatePresence initial={false}>
+                                      {isExpanded && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{
+                                            height: "auto",
+                                            opacity: 1,
+                                          }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.15 }}
+                                          className="border-t border-stone-850/50 bg-stone-950/40 p-2.5 text-[10px] space-y-1 text-stone-300 font-sans"
+                                        >
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              英文名稱:
+                                            </span>{" "}
+                                            <span className="font-mono text-stone-400">
+                                              {circuit.englishName}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              功能效果:
+                                            </span>{" "}
+                                            <span className="text-rose-300 font-medium">
+                                              {circuit.effect}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              製作配方:
+                                            </span>{" "}
+                                            <span className="font-mono">
+                                              {circuit.recipe}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              掃描對象:
+                                            </span>{" "}
+                                            <span className="text-rose-400 font-mono">
+                                              {circuit.scanTarget}
+                                            </span>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Available Circuit List */}
-                      <div>
-                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-3 pb-1 border-b border-stone-850">
-                          可用電路板清單 (Available Circuit Boards)
-                        </h3>
-
-                        <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                          {currentCharacter.circuits?.map((circuit) => {
-                            const currentCount = wxCircuits.filter(id => id === circuit.id).length;
-                            const isLimitReached = currentCount >= circuit.maxCount;
-                            const isSlotsExceeded = totalSlotsUsed + circuit.slots > 6;
-                            const canEquip = !isLimitReached && !isSlotsExceeded;
-
-                            let colorTheme = "border-stone-850 bg-stone-950/20";
-                            if (currentCount > 0) {
-                              if (circuit.id === "hardy") colorTheme = "border-rose-500/20 bg-rose-950/5";
-                              if (circuit.id === "logic") colorTheme = "border-indigo-500/20 bg-indigo-950/5";
-                              if (circuit.id === "gastric") colorTheme = "border-emerald-500/20 bg-emerald-950/5";
-                              if (circuit.id === "acceleration") colorTheme = "border-amber-500/20 bg-amber-955/5";
-                              if (circuit.id === "illumination") colorTheme = "border-yellow-500/20 bg-yellow-950/5";
-                              if (circuit.id === "thermal") colorTheme = "border-orange-500/20 bg-orange-955/5";
-                              if (circuit.id === "refrigerant") colorTheme = "border-sky-500/20 bg-sky-950/5";
-                            }
-
-                            return (
-                              <button
-                                key={circuit.id}
-                                disabled={!canEquip}
-                                onClick={() => handleInstallCircuit(circuit)}
-                                className={`w-full text-left p-3 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-2 transition-all relative ${
-                                  canEquip 
-                                    ? "hover:border-amber-500/40 hover:bg-stone-900/60 cursor-pointer" 
-                                    : "opacity-40 cursor-not-allowed"
-                                } ${colorTheme}`}
-                              >
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-bold text-xs text-white">
-                                      {circuit.name}
-                                    </h4>
-                                    <span className="text-[10px] text-stone-500 font-mono">
-                                      {circuit.englishName}
-                                    </span>
+                      {/* Beta Slots & Available Boards */}
+                      <div className="bg-stone-950/20 border border-stone-850/50 rounded-xl p-4 flex flex-col gap-4">
+                        {/* Beta Slot Visualizer */}
+                        <div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span className="text-amber-400 font-bold font-serif flex items-center gap-1">
+                              🟨 貝塔插槽 (Beta Slots)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              {totalSlotsUsed.beta} / 6
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {slotsAllocation.beta.map((slot, index) => {
+                              if (slot.empty) {
+                                return (
+                                  <div
+                                    key={`empty-beta-${index}`}
+                                    className="aspect-square rounded-xl border border-dashed border-amber-900/20 bg-stone-950/60 flex items-center justify-center text-[10px] text-stone-700 font-mono select-none"
+                                    title={`貝塔插槽 ${index + 1} (空)`}
+                                  >
+                                    β-{index + 1}
                                   </div>
-                                  <p className="text-[11px] text-stone-400 mt-1">
-                                    效果: <span className="text-amber-500/90">{circuit.effect}</span>
-                                  </p>
-                                  <div className="flex items-center gap-3 mt-1.5 text-[10px] text-stone-500 font-mono">
-                                    <span>插槽消耗: <strong className="text-stone-300 font-semibold">{circuit.slots}</strong></span>
-                                    <span>最大限制: <strong className="text-stone-300 font-semibold">{circuit.maxCount}</strong></span>
-                                    {currentCount > 0 && (
-                                      <span className="text-amber-500 font-bold bg-amber-950/40 px-1 rounded">
-                                        已安裝 {currentCount}/{circuit.maxCount}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                );
+                              } else {
+                                return (
+                                  <button
+                                    key={`filled-beta-${index}`}
+                                    onClick={() =>
+                                      handleUninstallCircuit(slot.originalIndex)
+                                    }
+                                    className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer hover:brightness-125 hover:scale-105 active:scale-95 ${slot.color}`}
+                                    title={`${slot.name} (佔用插槽 ${index + 1}/6) - 點擊解除安裝`}
+                                  >
+                                    <CircuitImage circuitId={slot.circuitId} className="w-7 h-7 object-contain" />
+                                    <span className="text-[8px] font-mono font-bold leading-none opacity-80">
+                                      {slot.indexInCircuit + 1}/{slot.slots}
+                                    </span>
+                                  </button>
+                                );
+                              }
+                            })}
+                          </div>
+                        </div>
 
-                                <div className="shrink-0 flex items-center justify-end">
-                                  {isLimitReached ? (
-                                    <span className="text-[10px] text-stone-600 bg-stone-950 border border-stone-850 px-2 py-1 rounded">
-                                      已達上限
+                        {/* Beta Available Circuits List */}
+                        <div className="border-t border-stone-850/60 pt-4 flex-1 flex flex-col">
+                          <div className="text-xs font-bold text-amber-400 bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-amber-900/30 mb-2.5 flex items-center justify-between font-serif">
+                            <span>貝塔電路 (速度與功能)</span>
+                            <span className="text-[10px] text-amber-500 font-mono">
+                              β - Beta
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                            {currentCharacter.circuits
+                              ?.filter((c) => c.type === "beta")
+                              .map((circuit) => {
+                                const currentCount = wxCircuits.filter(
+                                  (id) => id === circuit.id,
+                                ).length;
+                                const isLimitReached =
+                                  currentCount >= circuit.maxCount;
+                                const isSlotsExceeded =
+                                  totalSlotsUsed.beta + circuit.slots > 6;
+                                const canEquip =
+                                  !isLimitReached && !isSlotsExceeded;
+
+                                let colorTheme =
+                                  "border-stone-855 bg-stone-950/20";
+                                if (currentCount > 0) {
+                                  colorTheme =
+                                    "border-amber-500/20 bg-amber-950/5";
+                                }
+
+                                const isExpanded =
+                                  !!expandedCircuitIds[circuit.id];
+
+                                return (
+                                  <div
+                                    key={circuit.id}
+                                    className={`w-full rounded-xl border transition-all overflow-hidden flex flex-col ${colorTheme}`}
+                                  >
+                                    {/* Header Toggle Row */}
+                                    <div
+                                      onClick={() =>
+                                        toggleCircuitExpand(circuit.id)
+                                      }
+                                      className="w-full flex items-center justify-between p-2 hover:bg-stone-900/40 transition cursor-pointer select-none"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <ChevronRight
+                                          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-stone-500 ${
+                                            isExpanded
+                                              ? "rotate-90 text-amber-400"
+                                              : ""
+                                          }`}
+                                        />
+                                        <CircuitImage circuitId={circuit.id} className="w-6 h-6 object-contain shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="font-bold text-xs text-white truncate">
+                                            {circuit.name}
+                                          </h4>
+                                          <div className="flex items-center gap-1 mt-0.5 text-[9px] font-mono text-stone-400">
+                                            <span className="bg-stone-900 px-1 rounded text-stone-300">
+                                              {circuit.slots}P
+                                            </span>
+                                            {currentCount > 0 && (
+                                              <span className="bg-amber-950/40 text-amber-400 font-bold px-1 rounded">
+                                                已裝 {currentCount}/
+                                                {circuit.maxCount}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Install Button (Beta) */}
+                                      <button
+                                        disabled={!canEquip}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleInstallCircuit(circuit);
+                                        }}
+                                        className={`shrink-0 text-[9px] px-2 py-1 rounded transition font-bold font-serif shadow-sm ml-2 ${
+                                          isLimitReached
+                                            ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                            : isSlotsExceeded
+                                              ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                              : "text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-600 hover:text-stone-950 cursor-pointer"
+                                        }`}
+                                      >
+                                        {isLimitReached
+                                          ? "已達上限"
+                                          : isSlotsExceeded
+                                            ? "插槽不足"
+                                            : "＋ 安裝"}
+                                      </button>
+                                    </div>
+
+                                    {/* Collapsible Details (Beta) */}
+                                    <AnimatePresence initial={false}>
+                                      {isExpanded && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{
+                                            height: "auto",
+                                            opacity: 1,
+                                          }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.15 }}
+                                          className="border-t border-stone-850/50 bg-stone-950/40 p-2.5 text-[10px] space-y-1 text-stone-300 font-sans"
+                                        >
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              英文名稱:
+                                            </span>{" "}
+                                            <span className="font-mono text-stone-400">
+                                              {circuit.englishName}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              功能效果:
+                                            </span>{" "}
+                                            <span className="text-amber-300 font-medium">
+                                              {circuit.effect}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              製作配方:
+                                            </span>{" "}
+                                            <span className="font-mono">
+                                              {circuit.recipe}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              掃描對象:
+                                            </span>{" "}
+                                            <span className="text-amber-400 font-mono">
+                                              {circuit.scanTarget}
+                                            </span>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Gamma Slots & Available Boards */}
+                      <div className="bg-stone-950/20 border border-stone-850/50 rounded-xl p-4 flex flex-col gap-4">
+                        {/* Gamma Slot Visualizer */}
+                        <div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span className="text-emerald-400 font-bold font-serif flex items-center gap-1">
+                              🟩 伽馬插槽 (Gamma Slots)
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">
+                              {totalSlotsUsed.gamma} / 6
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {slotsAllocation.gamma.map((slot, index) => {
+                              if (slot.empty) {
+                                return (
+                                  <div
+                                    key={`empty-gamma-${index}`}
+                                    className="aspect-square rounded-xl border border-dashed border-emerald-900/20 bg-stone-950/60 flex items-center justify-center text-[10px] text-stone-700 font-mono select-none"
+                                    title={`伽馬插槽 ${index + 1} (空)`}
+                                  >
+                                    γ-{index + 1}
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <button
+                                    key={`filled-gamma-${index}`}
+                                    onClick={() =>
+                                      handleUninstallCircuit(slot.originalIndex)
+                                    }
+                                    className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer hover:brightness-125 hover:scale-105 active:scale-95 ${slot.color}`}
+                                    title={`${slot.name} (佔用插槽 ${index + 1}/6) - 點擊解除安裝`}
+                                  >
+                                    <CircuitImage circuitId={slot.circuitId} className="w-7 h-7 object-contain" />
+                                    <span className="text-[8px] font-mono font-bold leading-none opacity-80">
+                                      {slot.indexInCircuit + 1}/{slot.slots}
                                     </span>
-                                  ) : isSlotsExceeded ? (
-                                    <span className="text-[10px] text-stone-600 bg-stone-950 border border-stone-850 px-2 py-1 rounded">
-                                      插槽不足
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] text-amber-500 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-600 hover:text-stone-955 px-2.5 py-1 rounded transition font-bold font-serif shadow-sm">
-                                      ＋ 安裝
-                                    </span>
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
+                                  </button>
+                                );
+                              }
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Gamma Available Circuits List */}
+                        <div className="border-t border-stone-850/60 pt-4 flex-1 flex flex-col">
+                          <div className="text-xs font-bold text-emerald-400 bg-emerald-950/20 px-2.5 py-1.5 rounded-lg border border-emerald-900/30 mb-2.5 flex items-center justify-between font-serif">
+                            <span>探討與其他電路 (戰鬥與工作)</span>
+                            <span className="text-[10px] text-emerald-500 font-mono">
+                              γ - Gamma
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                            {currentCharacter.circuits
+                              ?.filter((c) => c.type === "gamma")
+                              .map((circuit) => {
+                                const currentCount = wxCircuits.filter(
+                                  (id) => id === circuit.id,
+                                ).length;
+                                const isLimitReached =
+                                  currentCount >= circuit.maxCount;
+                                const isSlotsExceeded =
+                                  totalSlotsUsed.gamma + circuit.slots > 6;
+                                const canEquip =
+                                  !isLimitReached && !isSlotsExceeded;
+
+                                let colorTheme =
+                                  "border-stone-855 bg-stone-950/20";
+                                if (currentCount > 0) {
+                                  colorTheme =
+                                    "border-emerald-500/20 bg-emerald-950/5";
+                                }
+
+                                const isExpanded =
+                                  !!expandedCircuitIds[circuit.id];
+
+                                return (
+                                  <div
+                                    key={circuit.id}
+                                    className={`w-full rounded-xl border transition-all overflow-hidden flex flex-col ${colorTheme}`}
+                                  >
+                                    {/* Header Toggle Row */}
+                                    <div
+                                      onClick={() =>
+                                        toggleCircuitExpand(circuit.id)
+                                      }
+                                      className="w-full flex items-center justify-between p-2.5 hover:bg-stone-900/40 transition cursor-pointer select-none"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <ChevronRight
+                                          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-stone-500 ${
+                                            isExpanded
+                                              ? "rotate-90 text-emerald-400"
+                                              : ""
+                                          }`}
+                                        />
+                                        <CircuitImage circuitId={circuit.id} className="w-6 h-6 object-contain shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="font-bold text-xs text-white truncate">
+                                            {circuit.name}
+                                          </h4>
+                                          <div className="flex items-center gap-1 mt-0.5 text-[9px] font-mono text-stone-400">
+                                            <span className="bg-stone-900 px-1 rounded text-stone-300">
+                                              {circuit.slots}P
+                                            </span>
+                                            {currentCount > 0 && (
+                                              <span className="bg-emerald-950/40 text-emerald-400 font-bold px-1 rounded">
+                                                已裝 {currentCount}/
+                                                {circuit.maxCount}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Install Button (Gamma) */}
+                                      <button
+                                        disabled={!canEquip}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleInstallCircuit(circuit);
+                                        }}
+                                        className={`shrink-0 text-[9px] px-2 py-1 rounded transition font-bold font-serif shadow-sm ml-2 ${
+                                          isLimitReached
+                                            ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                            : isSlotsExceeded
+                                              ? "text-stone-600 bg-stone-900 border border-stone-850 cursor-not-allowed"
+                                              : "text-emerald-400 border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-600 hover:text-stone-950 cursor-pointer"
+                                        }`}
+                                      >
+                                        {isLimitReached
+                                          ? "已達上限"
+                                          : isSlotsExceeded
+                                            ? "插槽不足"
+                                            : "＋ 安裝"}
+                                      </button>
+                                    </div>
+
+                                    {/* Collapsible Details (Gamma) */}
+                                    <AnimatePresence initial={false}>
+                                      {isExpanded && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{
+                                            height: "auto",
+                                            opacity: 1,
+                                          }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.15 }}
+                                          className="border-t border-stone-850/50 bg-stone-950/40 p-2.5 text-[10px] space-y-1 text-stone-300 font-sans"
+                                        >
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              英文名稱:
+                                            </span>{" "}
+                                            <span className="font-mono text-stone-400">
+                                              {circuit.englishName}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              功能效果:
+                                            </span>{" "}
+                                            <span className="text-emerald-300 font-medium">
+                                              {circuit.effect}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              製作配方:
+                                            </span>{" "}
+                                            <span className="font-mono">
+                                              {circuit.recipe}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-stone-500 font-mono">
+                                              掃描對象:
+                                            </span>{" "}
+                                            <span className="text-emerald-400 font-mono">
+                                              {circuit.scanTarget}
+                                            </span>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
                       </div>
                     </div>
