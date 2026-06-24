@@ -21,7 +21,9 @@ import {
   UtensilsCrossed,
   Layers,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  Cpu,
+  Zap
 } from "lucide-react";
 import {
   INGREDIENTS,
@@ -34,6 +36,7 @@ import {
   isRecipeRelated,
   getMissingRequirements,
 } from "./recipesData";
+import { CHARACTERS, Character, Circuit } from "./data/characters";
 
 const SPECIAL_INGREDIENTS = [
   { id: "mandrake", names: ["曼德拉草", "mandrake"] },
@@ -158,7 +161,103 @@ function StateIcon({ type, className = "w-5 h-5 object-contain" }: { type: "hp" 
 
 export default function App() {
   // Global states
-  const [activeTab, setActiveTab] = useState<"simulator" | "recipes">("recipes");
+  const [activeTab, setActiveTab] = useState<"recipes" | "simulator" | "characters">("recipes");
+
+  // Character Encyclopedia States
+  const [activeCharacterId, setActiveCharacterId] = useState<string>("wx78");
+  const [wxCircuits, setWxCircuits] = useState<string[]>([]);
+
+  const currentCharacter = useMemo(() => {
+    return CHARACTERS.find(c => c.id === activeCharacterId) || CHARACTERS[0];
+  }, [activeCharacterId]);
+
+  const totalSlotsUsed = useMemo(() => {
+    if (currentCharacter.id !== "wx78") return 0;
+    return wxCircuits.reduce((acc, cId) => {
+      const circ = currentCharacter.circuits?.find(c => c.id === cId);
+      return acc + (circ?.slots || 0);
+    }, 0);
+  }, [wxCircuits, currentCharacter]);
+
+  const slotsAllocation = useMemo(() => {
+    const representation: { circuitId: string; name: string; color: string; indexInCircuit: number; slots: number; originalIndex: number }[] = [];
+    
+    wxCircuits.forEach((cId, originalIndex) => {
+      const circ = CHARACTERS[0].circuits?.find(c => c.id === cId);
+      if (!circ) return;
+      
+      let color = "bg-amber-500/20 border-amber-500/50 text-amber-300";
+      if (cId === "hardy") color = "bg-rose-950/60 border-rose-500/60 text-rose-300";
+      if (cId === "logic") color = "bg-indigo-950/60 border-indigo-500/60 text-indigo-300";
+      if (cId === "gastric") color = "bg-emerald-950/60 border-emerald-500/60 text-emerald-300";
+      if (cId === "acceleration") color = "bg-amber-950/60 border-amber-500/60 text-amber-350";
+      if (cId === "illumination") color = "bg-yellow-950/60 border-yellow-500/60 text-yellow-300";
+      if (cId === "thermal") color = "bg-orange-950/60 border-orange-500/60 text-orange-300";
+      if (cId === "refrigerant") color = "bg-sky-950/60 border-sky-500/60 text-sky-300";
+
+      for (let i = 0; i < circ.slots; i++) {
+        representation.push({
+          circuitId: circ.id,
+          name: circ.name,
+          color,
+          indexInCircuit: i,
+          slots: circ.slots,
+          originalIndex
+        });
+      }
+    });
+
+    const result: ({ empty: boolean } | { empty: false; circuitId: string; name: string; color: string; indexInCircuit: number; slots: number; originalIndex: number })[] = representation.map(r => ({ empty: false, ...r }));
+    while (result.length < 6) {
+      result.push({ empty: true });
+    }
+    return result;
+  }, [wxCircuits]);
+
+  const calculatedStats = useMemo(() => {
+    let health = currentCharacter.health;
+    let hunger = currentCharacter.hunger;
+    let sanity = currentCharacter.sanity;
+    let speedBonus = 0;
+    let light = false;
+    let thermal = false;
+    let refrigerant = false;
+
+    if (currentCharacter.id === "wx78") {
+      wxCircuits.forEach(cId => {
+        const circ = currentCharacter.circuits?.find(c => c.id === cId);
+        if (!circ) return;
+        if (circ.statBonus) {
+          if (circ.statBonus.health) health += circ.statBonus.health;
+          if (circ.statBonus.hunger) hunger += circ.statBonus.hunger;
+          if (circ.statBonus.sanity) sanity += circ.statBonus.sanity;
+        }
+        if (cId === "acceleration") speedBonus += 25;
+        if (cId === "illumination") light = true;
+        if (cId === "thermal") thermal = true;
+        if (cId === "refrigerant") refrigerant = true;
+      });
+    }
+
+    return { health, hunger, sanity, speedBonus, light, thermal, refrigerant };
+  }, [wxCircuits, currentCharacter]);
+
+  const handleInstallCircuit = (circuit: Circuit) => {
+    const currentCount = wxCircuits.filter(id => id === circuit.id).length;
+    if (currentCount >= circuit.maxCount) return;
+    if (totalSlotsUsed + circuit.slots > 6) return;
+    setWxCircuits([...wxCircuits, circuit.id]);
+  };
+
+  const handleUninstallCircuit = (index: number) => {
+    setWxCircuits(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleFavoriteFoodClick = () => {
+    setActiveTab("recipes");
+    setSearchQuery("蝴蝶松餅");
+    setOnlyShowCookable(false);
+  };
 
   // Expanded status for category drawers (Tab 1: recipes checklist, Tab 2: simulator panel)
   const [expandedCatRecipes, setExpandedCatRecipes] = useState<Record<string, boolean>>({});
@@ -513,6 +612,19 @@ export default function App() {
             >
               <Flame className="h-4 w-4" />
               <span>烹飪真實模擬器</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("characters")}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "characters"
+                  ? "bg-amber-600 text-stone-950 border-amber-500 font-bold shadow-md shadow-amber-900/20"
+                  : "bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-750"
+              }`}
+              id="tab-characters-btn"
+            >
+              <UserCheck className="h-4 w-4" />
+              <span>人物百科</span>
             </button>
           </div>
         </div>
@@ -1349,6 +1461,511 @@ export default function App() {
                   </div>
                 </div>
 
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: CHARACTER ENCYCLOPEDIA */}
+          {activeTab === "characters" && (
+            <motion.div
+              key="characters-view"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+            >
+              {/* Left Column: Character List Selector */}
+              <div className="lg:col-span-3 flex flex-col gap-4">
+                <div className="bg-stone-900 border border-stone-850 rounded-2xl p-4">
+                  <h3 className="text-md font-serif font-bold text-amber-500 mb-4 pb-2 border-b border-stone-800">
+                    人物百科角色目錄
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {/* WX-78 */}
+                    <button
+                      onClick={() => setActiveCharacterId("wx78")}
+                      className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 cursor-pointer ${
+                        activeCharacterId === "wx78"
+                          ? "bg-amber-600/10 border-amber-500/60 shadow-md shadow-amber-900/10"
+                          : "bg-stone-950/40 border-stone-850 hover:border-stone-750"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-stone-900 border border-stone-800 overflow-hidden shrink-0 flex items-center justify-center relative">
+                        <img
+                          src={`${(import.meta as any).env.BASE_URL || "/"}images/characters/wx78.png`}
+                          className="w-full h-full object-cover"
+                          alt="WX-78"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-600 text-stone-950 text-[9px] font-bold text-center py-0.5">
+                          已上線
+                        </div>
+                      </div>
+                      <div className="min-w-0 font-serif">
+                        <h4 className="font-bold text-sm text-white flex items-center gap-1.5">
+                          <span>WX-78</span>
+                          <span className="text-[10px] bg-amber-600/20 text-amber-400 px-1 rounded">🤖</span>
+                        </h4>
+                        <p className="text-xs text-stone-400 truncate mt-0.5">
+                          殘酷的機器人
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Locked Placeholder: Wilson */}
+                    <div className="p-3 rounded-xl border border-stone-850/60 bg-stone-950/20 opacity-50 flex items-center gap-3 relative select-none">
+                      <div className="w-12 h-12 rounded-lg bg-stone-900 border border-stone-800 overflow-hidden shrink-0 flex items-center justify-center relative grayscale">
+                        <span className="text-xl">🧑‍🔬</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
+                          <span>威爾森</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 truncate mt-0.5">
+                          紳士科學家
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                        <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
+                          敬請期待
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Locked Placeholder: Willow */}
+                    <div className="p-3 rounded-xl border border-stone-850/60 bg-stone-950/20 opacity-50 flex items-center gap-3 relative select-none">
+                      <div className="w-12 h-12 rounded-lg bg-stone-900 border border-stone-800 overflow-hidden shrink-0 flex items-center justify-center relative grayscale">
+                        <span className="text-xl">🔥</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
+                          <span>薇洛</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 truncate mt-0.5">
+                          縱火者
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                        <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
+                          敬請期待
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Locked Placeholder: Wendy */}
+                    <div className="p-3 rounded-xl border border-stone-850/60 bg-stone-950/20 opacity-50 flex items-center gap-3 relative select-none">
+                      <div className="w-12 h-12 rounded-lg bg-stone-900 border border-stone-800 overflow-hidden shrink-0 flex items-center justify-center relative grayscale">
+                        <span className="text-xl">💀</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
+                          <span>溫蒂</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 truncate mt-0.5">
+                          喪親孤女
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                        <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
+                          敬請期待
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Locked Placeholder: Wolfgang */}
+                    <div className="p-3 rounded-xl border border-stone-850/60 bg-stone-950/20 opacity-50 flex items-center gap-3 relative select-none">
+                      <div className="w-12 h-12 rounded-lg bg-stone-900 border border-stone-800 overflow-hidden shrink-0 flex items-center justify-center relative grayscale">
+                        <span className="text-xl">💪</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-stone-500 flex items-center gap-1.5">
+                          <span>沃爾夫岡</span>
+                          <span className="text-[10px] bg-stone-800 text-stone-500 px-1 rounded">鎖定</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 truncate mt-0.5">
+                          大力士
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 bg-stone-955/20 rounded-xl flex items-center justify-center">
+                        <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded shadow">
+                          敬請期待
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Character Details & Upgrades */}
+              <div className="lg:col-span-9 flex flex-col gap-6">
+                {/* Main Profile Info */}
+                <div className="bg-stone-900 border border-stone-850 rounded-2xl p-6 relative overflow-hidden">
+                  {/* Decorative background glow if slots full */}
+                  {totalSlotsUsed === 6 && (
+                    <div className="absolute inset-0 bg-radial from-amber-600/5 via-transparent to-transparent pointer-events-none animate-pulse" />
+                  )}
+
+                  <div className="flex flex-col md:flex-row gap-6 items-start relative z-10">
+                    <div className="w-28 h-28 rounded-2xl overflow-hidden bg-stone-950 border border-amber-500/30 shadow-lg shadow-black/40 shrink-0 flex items-center justify-center animate-dst-glow">
+                      <img
+                        src={`${(import.meta as any).env.BASE_URL || "/"}images/characters/wx78.png`}
+                        className="w-full h-full object-cover"
+                        alt="WX-78 Avatar"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-2xl font-serif font-bold text-white tracking-wide">
+                          {currentCharacter.name}
+                        </h2>
+                        <span className="text-xs text-stone-400 bg-stone-950 px-2.5 py-1 rounded-md border border-stone-800 font-serif">
+                          {currentCharacter.englishName}
+                        </span>
+                        {totalSlotsUsed === 6 && (
+                          <span className="text-xs font-bold bg-amber-600 text-stone-950 px-2 py-0.5 rounded animate-bounce">
+                            ⚡ 系統已滿載 (Fully Overloaded)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-amber-500/80 font-serif font-bold text-sm mt-1">
+                        {currentCharacter.title}
+                      </p>
+                      <p className="text-stone-300 text-sm mt-3 leading-relaxed">
+                        {currentCharacter.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <hr className="border-stone-850 my-6" />
+
+                  {/* Character Properties & Interactive Config */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
+                    {/* Left Sub-Column: Stats & Perks */}
+                    <div className="md:col-span-6 flex flex-col gap-6">
+                      <div>
+                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
+                          <Layers className="h-4 w-4" />
+                          動態屬性值 (Real-time Stats)
+                        </h3>
+
+                        <div className="space-y-4">
+                          {/* Health Bar */}
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1.5">
+                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                                <StateIcon type="hp" className="w-4.5 h-4.5 object-contain" />
+                                生命值 (Health)
+                              </span>
+                              <span className="font-mono text-stone-400 font-bold">
+                                <span className="text-red-400">{calculatedStats.health}</span>
+                                <span className="text-stone-600"> / 270</span>
+                                <span className="text-[10px] text-stone-500 ml-1">
+                                  (150 + {calculatedStats.health - 150})
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                              <div
+                                className="h-full bg-gradient-to-r from-red-800 to-red-600 rounded-full transition-all duration-300 shadow-inner"
+                                style={{ width: `${(calculatedStats.health / 270) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Hunger Bar */}
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1.5">
+                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                                <StateIcon type="hunger" className="w-4.5 h-4.5 object-contain" />
+                                飢餓值 (Hunger)
+                              </span>
+                              <span className="font-mono text-stone-400 font-bold">
+                                <span className="text-amber-500">{calculatedStats.hunger}</span>
+                                <span className="text-stone-600"> / 270</span>
+                                <span className="text-[10px] text-stone-500 ml-1">
+                                  (150 + {calculatedStats.hunger - 150})
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-700 to-amber-550 rounded-full transition-all duration-300 shadow-inner"
+                                style={{ width: `${(calculatedStats.hunger / 270) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Sanity Bar */}
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1.5">
+                              <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                                <StateIcon type="sanity" className="w-4.5 h-4.5 object-contain" />
+                                理智值 (Sanity)
+                              </span>
+                              <span className="font-mono text-stone-400 font-bold">
+                                <span className="text-cyan-400">{calculatedStats.sanity}</span>
+                                <span className="text-stone-600"> / 270</span>
+                                <span className="text-[10px] text-stone-500 ml-1">
+                                  (150 + {calculatedStats.sanity - 150})
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-850 p-0.5">
+                              <div
+                                className="h-full bg-gradient-to-r from-cyan-700 to-cyan-550 rounded-full transition-all duration-300 shadow-inner"
+                                style={{ width: `${(calculatedStats.sanity / 270) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Extra Status Buffs */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
+                            calculatedStats.speedBonus > 0 
+                              ? "bg-amber-950/60 text-amber-300 border-amber-500/30 font-medium" 
+                              : "bg-stone-950/20 text-stone-650 border-stone-850"
+                          }`}>
+                            <Zap className="h-3 w-3 shrink-0" />
+                            移動速度: +{calculatedStats.speedBonus}%
+                          </span>
+                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
+                            calculatedStats.light 
+                              ? "bg-yellow-955/40 text-yellow-300 border-yellow-500/30 font-medium" 
+                              : "bg-stone-950/20 text-stone-655 border-stone-850"
+                          }`}>
+                            <Lightbulb className="h-3 w-3 shrink-0" />
+                            隨身光源: {calculatedStats.light ? "已啟用" : "未啟用"}
+                          </span>
+                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
+                            calculatedStats.thermal 
+                              ? "bg-orange-950/60 text-orange-300 border-orange-500/30 font-medium" 
+                              : "bg-stone-950/20 text-stone-650 border-stone-850"
+                          }`}>
+                            <Flame className="h-3 w-3 shrink-0" />
+                            免疫凍傷: {calculatedStats.thermal ? "已啟用" : "未啟用"}
+                          </span>
+                          <span className={`text-[11px] px-2 py-1 rounded-md border transition-all flex items-center gap-1 ${
+                            calculatedStats.refrigerant 
+                              ? "bg-sky-950/60 text-sky-300 border-sky-500/30 font-medium" 
+                              : "bg-stone-950/20 text-stone-650 border-stone-850"
+                          }`}>
+                            <Sparkles className="h-3 w-3 shrink-0" />
+                            免疫中暑: {calculatedStats.refrigerant ? "已啟用" : "未啟用"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Perks */}
+                      <div>
+                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-3 pb-1 border-b border-stone-850">
+                          人物特性 (Perks)
+                        </h3>
+                        <div className="space-y-3">
+                          {currentCharacter.perks.map((perk, i) => (
+                            <div key={i} className="bg-stone-950/30 border border-stone-850/80 rounded-xl p-3">
+                              <h4 className="text-xs font-bold text-stone-200 mb-1 font-serif">
+                                {perk.title}
+                              </h4>
+                              <p className="text-[11px] text-stone-400 leading-relaxed">
+                                {perk.desc}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Favorite Food Widget */}
+                      <div className="bg-stone-955/40 border border-stone-800 rounded-xl p-4">
+                        <h4 className="text-xs font-serif font-bold text-amber-500 mb-2 flex items-center gap-1.5">
+                          <Soup className="h-4 w-4 text-amber-500" />
+                          最愛料理 (Favorite Food)
+                        </h4>
+                        <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
+                          {currentCharacter.favoriteFoodBonus}
+                        </p>
+                        <button
+                          onClick={handleFavoriteFoodClick}
+                          className="w-full py-2 px-3 bg-stone-850 hover:bg-stone-800 border border-stone-700 hover:border-amber-500/50 rounded-lg text-[11px] font-semibold text-amber-500 hover:text-amber-400 transition flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span>在食譜庫中檢索「蝴蝶松餅」</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Right Sub-Column: Circuit Upgrades */}
+                    <div className="md:col-span-6 flex flex-col gap-6">
+                      <div>
+                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-4 pb-1 border-b border-stone-850 flex items-center gap-1.5">
+                          <Cpu className="h-4 w-4" />
+                          電路板升級插槽 ({totalSlotsUsed} / 6 Slots Used)
+                        </h3>
+
+                        {/* Interactive Slot Allocation Visual Row */}
+                        <div className="grid grid-cols-6 gap-2 mb-4">
+                          {slotsAllocation.map((slot, index) => {
+                            if (slot.empty) {
+                              return (
+                                <div
+                                  key={`empty-${index}`}
+                                  className="aspect-square rounded-xl border border-dashed border-stone-800 bg-stone-950/60 flex items-center justify-center text-[10px] text-stone-700 font-mono select-none"
+                                  title={`插槽 ${index + 1} (空)`}
+                                >
+                                  {index + 1}
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <button
+                                  key={`filled-${index}`}
+                                  onClick={() => handleUninstallCircuit(slot.originalIndex)}
+                                  className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all cursor-pointer hover:brightness-125 hover:scale-105 active:scale-95 ${slot.color}`}
+                                  title={`${slot.name} (佔用插槽 ${index + 1}/6) - 點擊解除安裝`}
+                                >
+                                  <span className="text-[8px] font-bold text-center leading-none mt-1 truncate w-full">
+                                    {slot.name.replace("電路板", "")}
+                                  </span>
+                                  <span className="text-[8px] font-mono opacity-60">
+                                    {slot.indexInCircuit + 1}/{slot.slots}
+                                  </span>
+                                </button>
+                              );
+                            }
+                          })}
+                        </div>
+
+                        {/* Currently Equipped Circuit List / Log */}
+                        <div className="bg-stone-950 border border-stone-850 rounded-xl p-3 min-h-[90px] flex flex-col justify-center">
+                          {wxCircuits.length === 0 ? (
+                            <div className="text-center py-4">
+                              <p className="text-xs text-stone-500">尚未安裝任何電路板</p>
+                              <p className="text-[10px] text-stone-600 mt-1">點擊下方清單裝載電路板升級屬性</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <div className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
+                                <span>已裝載晶片 ({wxCircuits.length})</span>
+                                <button
+                                  onClick={() => setWxCircuits([])}
+                                  className="text-red-500 hover:text-red-400 hover:underline cursor-pointer font-bold lowercase"
+                                >
+                                  清空全部
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {wxCircuits.map((cId, idx) => {
+                                  const circ = currentCharacter.circuits?.find(c => c.id === cId);
+                                  if (!circ) return null;
+                                  return (
+                                    <div
+                                      key={`${cId}-${idx}`}
+                                      className="inline-flex items-center gap-1 bg-stone-900 border border-stone-800 rounded px-2 py-0.5 text-xs text-stone-300 animate-dst-glow"
+                                    >
+                                      <span>{circ.name}</span>
+                                      <span className="text-[9px] text-stone-500 font-mono">({circ.slots}P)</span>
+                                      <button
+                                        onClick={() => handleUninstallCircuit(idx)}
+                                        className="text-red-500 hover:text-red-400 font-bold ml-1 px-0.5 cursor-pointer text-[10px]"
+                                        title="解除裝載"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Available Circuit List */}
+                      <div>
+                        <h3 className="text-sm font-serif font-bold text-amber-500 mb-3 pb-1 border-b border-stone-850">
+                          可用電路板清單 (Available Circuit Boards)
+                        </h3>
+
+                        <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                          {currentCharacter.circuits?.map((circuit) => {
+                            const currentCount = wxCircuits.filter(id => id === circuit.id).length;
+                            const isLimitReached = currentCount >= circuit.maxCount;
+                            const isSlotsExceeded = totalSlotsUsed + circuit.slots > 6;
+                            const canEquip = !isLimitReached && !isSlotsExceeded;
+
+                            let colorTheme = "border-stone-850 bg-stone-950/20";
+                            if (currentCount > 0) {
+                              if (circuit.id === "hardy") colorTheme = "border-rose-500/20 bg-rose-950/5";
+                              if (circuit.id === "logic") colorTheme = "border-indigo-500/20 bg-indigo-950/5";
+                              if (circuit.id === "gastric") colorTheme = "border-emerald-500/20 bg-emerald-950/5";
+                              if (circuit.id === "acceleration") colorTheme = "border-amber-500/20 bg-amber-955/5";
+                              if (circuit.id === "illumination") colorTheme = "border-yellow-500/20 bg-yellow-950/5";
+                              if (circuit.id === "thermal") colorTheme = "border-orange-500/20 bg-orange-955/5";
+                              if (circuit.id === "refrigerant") colorTheme = "border-sky-500/20 bg-sky-950/5";
+                            }
+
+                            return (
+                              <button
+                                key={circuit.id}
+                                disabled={!canEquip}
+                                onClick={() => handleInstallCircuit(circuit)}
+                                className={`w-full text-left p-3 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-2 transition-all relative ${
+                                  canEquip 
+                                    ? "hover:border-amber-500/40 hover:bg-stone-900/60 cursor-pointer" 
+                                    : "opacity-40 cursor-not-allowed"
+                                } ${colorTheme}`}
+                              >
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-bold text-xs text-white">
+                                      {circuit.name}
+                                    </h4>
+                                    <span className="text-[10px] text-stone-500 font-mono">
+                                      {circuit.englishName}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-stone-400 mt-1">
+                                    效果: <span className="text-amber-500/90">{circuit.effect}</span>
+                                  </p>
+                                  <div className="flex items-center gap-3 mt-1.5 text-[10px] text-stone-500 font-mono">
+                                    <span>插槽消耗: <strong className="text-stone-300 font-semibold">{circuit.slots}</strong></span>
+                                    <span>最大限制: <strong className="text-stone-300 font-semibold">{circuit.maxCount}</strong></span>
+                                    {currentCount > 0 && (
+                                      <span className="text-amber-500 font-bold bg-amber-950/40 px-1 rounded">
+                                        已安裝 {currentCount}/{circuit.maxCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 flex items-center justify-end">
+                                  {isLimitReached ? (
+                                    <span className="text-[10px] text-stone-600 bg-stone-950 border border-stone-850 px-2 py-1 rounded">
+                                      已達上限
+                                    </span>
+                                  ) : isSlotsExceeded ? (
+                                    <span className="text-[10px] text-stone-600 bg-stone-950 border border-stone-850 px-2 py-1 rounded">
+                                      插槽不足
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-amber-500 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-600 hover:text-stone-955 px-2.5 py-1 rounded transition font-bold font-serif shadow-sm">
+                                      ＋ 安裝
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
