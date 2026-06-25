@@ -2677,49 +2677,6 @@ export default function App() {
                               );
                             });
                           })}
-
-                          {/* Draw line from extrabody_1 to locks */}
-                          {["wx78_allegiance_lunar_lock_1", "wx78_shadow_allegiance_lock_1"].map(lockId => {
-                            const lockNode = (WX78_SKILL_TREE as any)[lockId];
-                            const extrabody1 = (WX78_SKILL_TREE as any)["wx78_extrabody_1"];
-                            if (!lockNode || !extrabody1) return null;
-
-                            const p1 = getNodePosPct(extrabody1.pos);
-                            const p2 = getNodePosPct(lockNode.pos);
-                            const x1 = p1.x;
-                            const y1 = p1.y;
-                            const x2 = p2.x;
-                            const y2 = p2.y;
-
-                            const isExtrabody1Active = wxSkills.includes("wx78_extrabody_1");
-                            const isLockOpen =
-                              isExtrabody1Active &&
-                              (lockId === "wx78_allegiance_lunar_lock_1" ? !wxSkills.includes("wx78_allegiance_shadow") && celestialDefeated : !wxSkills.includes("wx78_allegiance_lunar") && shadowDefeated);
-
-                            let strokeColor = "#1c1917"; // stone-900
-                            let strokeWidth = "1";
-                            let strokeDash = "2,2";
-
-                            if (isLockOpen && isExtrabody1Active) {
-                              strokeColor = "#059669"; // emerald-600
-                              strokeWidth = "1.5";
-                              strokeDash = undefined;
-                            }
-
-                            return (
-                              <line
-                                key={`line-extrabody-${lockId}`}
-                                x1={`${x1}%`}
-                                y1={`${y1}%`}
-                                x2={`${x2}%`}
-                                y2={`${y2}%`}
-                                stroke={strokeColor}
-                                strokeWidth={strokeWidth}
-                                strokeDasharray={strokeDash}
-                                className="transition-all duration-300"
-                              />
-                            );
-                          })}
                         </svg>
 
                         {/* Render Node Buttons */}
