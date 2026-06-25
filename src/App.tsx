@@ -2550,7 +2550,7 @@ export default function App() {
                             left: "50%",
                             top: "15.5%",
                             width: "12.5%",
-                            height: "19.8%",
+                            height: "21.0%",
                             transform: "translate(-50%, -50%)",
                             zIndex: 5,
                           }}
@@ -2562,8 +2562,8 @@ export default function App() {
                               alt="Remaining Points Eye Frame"
                             />
                             {/* Remaining Points Text inside the eye outline */}
-                            <span 
-                              className="relative z-10 font-bold font-mono text-stone-950 text-xs sm:text-sm md:text-base mt-[8%]"
+                            <span
+                              className="relative z-10 font-bold font-mono text-stone-950 text-base sm:text-lg md:text-xl lg:text-2xl mt-[8%]"
                             >
                               {15 - wxSkills.length}
                             </span>
@@ -3970,7 +3970,7 @@ export default function App() {
 
               {/* Scrollable Content */}
               <div className="p-6 overflow-y-auto space-y-6 text-stone-300 text-sm">
-                
+
                 {/* 遠古順序 */}
                 <div>
                   <h3 className="text-sm font-serif font-bold text-amber-500 mb-3 pb-1 border-b border-stone-850 flex items-center gap-1.5">
