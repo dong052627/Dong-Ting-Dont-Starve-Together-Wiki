@@ -2548,9 +2548,9 @@ export default function App() {
                           className="absolute flex items-center justify-center pointer-events-none"
                           style={{
                             left: "50%",
-                            top: "21.7%",
-                            width: "9.2%",
-                            height: "14.6%",
+                            top: "15.5%",
+                            width: "12.5%",
+                            height: "19.8%",
                             transform: "translate(-50%, -50%)",
                             zIndex: 5,
                           }}
@@ -2563,7 +2563,7 @@ export default function App() {
                             />
                             {/* Remaining Points Text inside the eye outline */}
                             <span 
-                              className={`relative z-10 font-bold font-mono ${15 - wxSkills.length > 0 ? "text-amber-400" : "text-stone-400"} text-[10px] sm:text-xs md:text-sm mt-[6%] drop-shadow-[0_1.5px_1.5px_rgba(0,0,0,0.85)]`}
+                              className="relative z-10 font-bold font-mono text-stone-950 text-xs sm:text-sm md:text-base mt-[8%]"
                             >
                               {15 - wxSkills.length}
                             </span>
