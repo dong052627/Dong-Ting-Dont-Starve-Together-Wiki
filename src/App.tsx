@@ -59,6 +59,8 @@ const SPECIAL_INGREDIENTS = [
   { id: "boneshard", names: ["骨頭碎片", "bone shards"] },
   { id: "batnose", names: ["裸露鼻孔", "batnose"] },
   { id: "tallbirdegg", names: ["高腳鳥蛋", "tallbird egg"] },
+  { id: "asparagus", names: ["蘆筍", "蘆葦", "asparagus"] },
+  { id: "tomato", names: ["番茄", "tomato"] },
 ];
 
 function isStronglyBoundTo(recipe: Recipe, ingredientId: string): boolean {
@@ -81,6 +83,8 @@ function isStronglyBoundTo(recipe: Recipe, ingredientId: string): boolean {
     boneshard: ["bone shards", "bone shard"],
     batnose: ["batnose"],
     tallbirdegg: ["tallbird egg"],
+    asparagus: ["asparagus"],
+    tomato: ["tomato"],
   };
 
   const terms = idToTerms[ingredientId];
@@ -765,6 +769,18 @@ export default function App() {
         checkedIngredients.includes("tallbirdegg_cooked")
       ) {
         activeIds.add("tallbirdegg");
+      }
+      if (
+        sp.id === "asparagus" &&
+        checkedIngredients.includes("asparagus_cooked")
+      ) {
+        activeIds.add("asparagus");
+      }
+      if (
+        sp.id === "tomato" &&
+        checkedIngredients.includes("tomato_cooked")
+      ) {
+        activeIds.add("tomato");
       }
     });
 
